@@ -1,0 +1,8 @@
+# Open Design 编辑器元数据，不发布
+*.artifact.json
+
+# 系统
+.DS_Store
+
+# OD 内部 skill 缓存，不发布
+.od-skills/
