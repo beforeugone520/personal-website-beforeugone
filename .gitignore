@@ -6,3 +6,6 @@
 
 # OD 内部 skill 缓存，不发布
 .od-skills/
+
+# OD 批注截图，不发布
+*-drawing-*.png
