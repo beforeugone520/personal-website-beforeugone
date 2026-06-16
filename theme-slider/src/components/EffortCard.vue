@@ -42,7 +42,7 @@
     <div class="card" :style="cardClip">
       <div class="header">
         <div class="header-left">
-          <span class="label-text">Effort</span>
+          <span class="label-text">主题</span>
           <span
             class="status-text"
             :class="{ glowing: isActive, 'animate-up': isAnimating }"
@@ -61,8 +61,8 @@
       </div>
 
       <div class="scale-labels">
-        <span>Faster</span>
-        <span>Smarter</span>
+        <span>浅色</span>
+        <span>深色</span>
       </div>
 
       <div class="track-wrapper"
@@ -111,7 +111,9 @@ const canvasMask = computed(() => {
 
 /* ── webgl engine ─────────────────────────── */
 const canvasRef = ref(null)
-useWebglFire(canvasRef, sliderValue, isActive)
+// reduced-motion：不跑 WebGL 火焰（守站点无障碍纪律）
+const reduceMotion = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches
+if (!reduceMotion) useWebglFire(canvasRef, sliderValue, isActive)
 </script>
 
 <style scoped>
@@ -381,5 +383,46 @@ input[type='range']::-moz-range-track {
   background: transparent;
   border: none;
   height: 30px;
+}
+
+/* ───────── 改装覆写：token 对齐站点 + 朱红 + 导航缩小（后置规则胜出）───────── */
+.card {
+  background: var(--surface, #fff);
+  border: 1px solid var(--border, rgba(0, 0, 0, 0.1));
+  color: var(--fg, #222);
+  width: 168px;
+  padding: 6px 8px;
+  border-radius: 12px;
+}
+.card-shadow {
+  filter: drop-shadow(0 4px 10px color-mix(in oklch, var(--fg, #000) 14%, transparent));
+}
+.header { margin-bottom: 5px; }
+.header-left { font-size: 11px; gap: 4px; }
+.label-text { color: var(--muted, #777); }
+.status-text {
+  color: var(--muted, #777);
+  font-family: var(--font-mono, ui-monospace, monospace);
+}
+.status-text.glowing {
+  color: var(--accent, #d8431d);
+  text-shadow: 0 0 12px color-mix(in oklch, var(--accent, #d8431d) 55%, transparent);
+}
+.help-btn { display: none; }
+.scale-labels { font-size: 9px; margin-bottom: 3px; letter-spacing: 0.02em; }
+/* 槽底保持深色：火焰 screen 混合需要暗背景才可见 */
+.track-wrapper { height: 22px; border-radius: 8px; }
+input[type='range']::-webkit-slider-thumb { width: 20px; height: 20px; border-radius: 7px; }
+input[type='range']::-moz-range-thumb { width: 18px; height: 18px; border-radius: 7px; }
+input[type='range'].glowing::-webkit-slider-thumb {
+  box-shadow: 0 0.5px 1px rgba(0,0,0,0.18), 0 2px 6px rgba(0,0,0,0.25),
+    0 0 22px color-mix(in oklch, var(--accent, #d8431d) 50%, transparent),
+    0 0 40px color-mix(in oklch, var(--accent, #d8431d) 28%, transparent),
+    inset 0 0.5px 0 rgba(255,255,255,0.85);
+}
+input[type='range'].glowing::-moz-range-thumb {
+  box-shadow: 0 0.5px 1px rgba(0,0,0,0.18), 0 2px 6px rgba(0,0,0,0.25),
+    0 0 22px color-mix(in oklch, var(--accent, #d8431d) 50%, transparent),
+    0 0 40px color-mix(in oklch, var(--accent, #d8431d) 28%, transparent);
 }
 </style>
