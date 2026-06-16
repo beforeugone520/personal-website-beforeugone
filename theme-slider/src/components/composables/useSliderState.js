@@ -1,58 +1,25 @@
 import { ref, computed, watch, onBeforeUnmount } from 'vue'
+import { valueToTheme, themeToValue, getInitialTheme, applyTheme, THEMES } from '../../theme'
 
-export function useSliderState(threshold = 100) {
-  const sliderValue = ref(70)
+export function useSliderState() {
+  const sliderValue = ref(themeToValue(getInitialTheme()))
   const isAnimating = ref(false)
   let timer = null
 
-  /* ── derived state ────────────────────────── */
-  const isActive = computed(() => sliderValue.value >= threshold)
+  const theme = computed(() => valueToTheme(sliderValue.value))
+  const isDark = computed(() => theme.value === THEMES.DARK)
+  const isActive = isDark                       // 火焰/辉光绑定到“深色/夜”端
   const isFull = computed(() => sliderValue.value === 100)
+  const statusLabel = computed(() => (isDark.value ? '深色' : '浅色'))
 
-  const statusLabel = computed(() => {
-    const v = sliderValue.value
-    if (v < 33) return 'Low'
-    if (v < 66) return 'Medium'
-    if (v < threshold) return 'High'
-    return 'Ultracode'
-  })
+  function clearAnimation() { if (timer != null) { clearTimeout(timer); timer = null } isAnimating.value = false }
+  function playFlipUp() { clearAnimation(); isAnimating.value = true; timer = setTimeout(() => { isAnimating.value = false; timer = null }, 460) }
 
-  /* ── flip-up animation ────────────────────── */
-  function clearAnimation() {
-    if (timer != null) {
-      clearTimeout(timer)
-      timer = null
-    }
-    isAnimating.value = false
-  }
+  // 主题翻转：写站点主题 + 播标签翻转动画
+  watch(theme, (n, o) => { if (n !== o) { applyTheme(n); playFlipUp() } })
 
-  function playFlipUp() {
-    clearAnimation()
-    isAnimating.value = true
-    timer = setTimeout(() => {
-      isAnimating.value = false
-      timer = null
-    }, 460)
-  }
-
-  watch(statusLabel, (n, o) => {
-    if (n === 'Ultracode' && o !== 'Ultracode') playFlipUp()
-    else if (n !== 'Ultracode' && o === 'Ultracode') clearAnimation()
-  })
-
-  /* ── input handler ────────────────────────── */
-  function onInput(e) {
-    sliderValue.value = parseInt(e.target.value, 10)
-  }
+  function onInput(e) { sliderValue.value = parseInt(e.target.value, 10) }
 
   onBeforeUnmount(clearAnimation)
-
-  return {
-    sliderValue,
-    isActive,
-    isFull,
-    isAnimating,
-    statusLabel,
-    onInput,
-  }
+  return { sliderValue, isActive, isFull, isAnimating, statusLabel, theme, onInput }
 }
