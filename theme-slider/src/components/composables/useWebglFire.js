@@ -97,6 +97,7 @@ export function useWebglFire(canvasRef, sliderValue, isActive) {
 
     // initial size
     resize()
+    startIfActive()
   }
 
   function resize() {
@@ -110,6 +111,13 @@ export function useWebglFire(canvasRef, sliderValue, isActive) {
 
     destroyFBOs()
     createFBOs()
+    startIfActive()
+  }
+
+  function startIfActive() {
+    if (!cachedActive) return
+    if (ultraStart == null) ultraStart = performance.now()
+    ensureLoop()
   }
 
   /* ── program compilation ──────────────────── */
