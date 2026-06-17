@@ -7,7 +7,7 @@ describe('valueToTheme（跨中点翻转）', () => {
 })
 
 describe('themeToValue（主题→初始滑块位）', () => {
-  it('深→偏满端、浅→偏低端', () => { expect(themeToValue('dark')).toBe(85); expect(themeToValue('light')).toBe(15) })
+  it('深→满端、浅→低端', () => { expect(themeToValue('dark')).toBe(100); expect(themeToValue('light')).toBe(0) })
 })
 
 describe('getInitialTheme', () => {

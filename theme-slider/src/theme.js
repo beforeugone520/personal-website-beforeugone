@@ -7,9 +7,9 @@ export function valueToTheme(value) {
   return value >= 50 ? THEMES.DARK : THEMES.LIGHT
 }
 
-// 主题 → 初始滑块位（深 85 偏满端、浅 15 偏低端，留拖拽手感）
+// 主题 → 初始滑块位：刷新后浅色/深色都贴紧对应端点。
 export function themeToValue(theme) {
-  return theme === THEMES.DARK ? 85 : 15
+  return theme === THEMES.DARK ? 100 : 0
 }
 
 // 当前主题：站点早执行脚本已写到 <html data-theme>，否则跟随系统

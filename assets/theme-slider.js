@@ -2658,7 +2658,7 @@ function Ya(e) {
 	return e >= 50 ? qa.DARK : qa.LIGHT;
 }
 function Xa(e) {
-	return e === qa.DARK ? 85 : 15;
+	return e === qa.DARK ? 100 : 0;
 }
 function Za() {
 	let e = document.documentElement.getAttribute("data-theme");
