@@ -2887,9 +2887,5 @@ var to = (e, t) => {
 		], 6)], 4)])], 64));
 	}
 }, [["__scopeId", "data-v-b9fc240d"]]), oo = document.getElementById("theme-slider");
-if (oo) {
-	Ba(ao).mount(oo);
-	let e = document.getElementById("themeBtn");
-	e && (e.hidden = !0);
-}
+oo && Ba(ao).mount(oo);
 //#endregion

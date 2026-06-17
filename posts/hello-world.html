@@ -6,7 +6,7 @@
 <title>开张：为什么我决定开始写 · BeforeUgone</title>
 <meta name="description" content="一个能用 AI 出活的 vibe coder，为什么要写博客？BeforeUgone 的第一篇。" />
 <link rel="stylesheet" href="../css/site.css" />
-<link rel="stylesheet" href="../assets/theme-slider.css?v=07567d42" />
+<link rel="stylesheet" href="../assets/theme-slider.css?v=89657a14" />
 </head>
 <body>
 
@@ -21,10 +21,6 @@
     </nav>
     <div class="nav-tools">
       <span id="theme-slider" aria-hidden="true"></span>
-      <button class="icon-btn" id="themeBtn" aria-label="切换深浅色">
-        <svg class="sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><circle cx="12" cy="12" r="4.2"/><path d="M12 2v2.4M12 19.6V22M4.9 4.9l1.7 1.7M17.4 17.4l1.7 1.7M2 12h2.4M19.6 12H22M4.9 19.1l1.7-1.7M17.4 6.6l1.7-1.7"/></svg>
-        <svg class="moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M20 14.5A8 8 0 1 1 9.5 4a6.3 6.3 0 0 0 10.5 10.5Z"/></svg>
-      </button>
       <a class="btn btn-primary" href="https://github.com/beforeugone520" target="_blank" rel="noopener" style="padding:9px 16px;">GitHub</a>
       <button class="icon-btn nav-toggle" id="navToggle" aria-label="菜单" aria-expanded="false">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 7h16M4 12h16M4 17h16"/></svg>
@@ -98,11 +94,6 @@
     try { saved = localStorage.getItem('bug-theme'); } catch (e) {}
     if (saved) root.setAttribute('data-theme', saved);
     else if (window.matchMedia && matchMedia('(prefers-color-scheme: dark)').matches) root.setAttribute('data-theme', 'dark');
-    document.getElementById('themeBtn').addEventListener('click', function () {
-      var next = root.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
-      root.setAttribute('data-theme', next);
-      try { localStorage.setItem('bug-theme', next); } catch (e) {}
-    });
   })();
   (function () {
     var toggle = document.getElementById('navToggle');
@@ -116,6 +107,6 @@
     });
   })();
 </script>
-<script type="module" src="../assets/theme-slider.js?v=07567d42"></script>
+<script type="module" src="../assets/theme-slider.js?v=89657a14"></script>
 </body>
 </html>

@@ -31,7 +31,7 @@ pnpm test       # 跑逻辑单测
 
 > esbuild 构建脚本的审批已记在 `theme-slider/pnpm-workspace.yaml`（`allowBuilds: esbuild: true`），所以 `pnpm build` / `pnpm test` 开箱即用。
 
-产物 `assets/theme-slider.js|css` 由 `index.html` / `blog.html` / `posts/*.html` 引用并自挂载到导航 `#theme-slider`，挂载成功后隐藏 sun/moon 按钮；关 JS、无 WebGL2 或加载失败时，按钮作为兜底仍可切主题。
+产物 `assets/theme-slider.js|css` 由 `index.html` / `blog.html` / `posts/*.html` 引用并自挂载到导航 `#theme-slider`；导航只保留滑块作为浅/深主题切换控件。
 
 产物文件名无 hash，三页引用带 `?v=<短哈希>` 缓存戳。**重建后须更新这个戳**，否则浏览器吃旧缓存：
 
