@@ -40,26 +40,6 @@
 
   <div class="card-shadow">
     <div class="card" :style="cardClip">
-      <div class="header">
-        <div class="header-left">
-          <span class="label-text">主题</span>
-          <span
-            class="status-text"
-            :class="{ glowing: isActive, 'animate-up': isAnimating }"
-          >
-            {{ statusLabel }}
-          </span>
-        </div>
-        <div class="help-btn">
-          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
-               stroke-width="1.5" stroke="currentColor">
-            <path stroke-linecap="round" stroke-linejoin="round"
-              d="M9.879 7.519c1.171-1.025 3.071-1.025 4.242 0 1.172 1.025 1.172 2.687 0 3.712-.203.179-.43.326-.67.442-.745.361-1.45.999-1.45 1.827v.75M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Zm-9 5.25h.008v.008H12v-.008Z"
-            />
-          </svg>
-        </div>
-      </div>
-
       <div class="scale-labels">
         <span>浅色</span>
         <span>深色</span>
@@ -90,8 +70,7 @@ import { useSliderState } from './composables/useSliderState'
 import { useWebglFire } from './composables/useWebglFire'
 
 /* ── slider state ─────────────────────────── */
-const { sliderValue, isActive, isFull, isAnimating, statusLabel, onInput } =
-  useSliderState()
+const { sliderValue, isActive, isFull, onInput } = useSliderState()
 
 /* ── clip-path IDs ────────────────────────── */
 const uid = Math.random().toString(36).slice(2, 8)
@@ -137,83 +116,6 @@ if (!reduceMotion) useWebglFire(canvasRef, sliderValue, isActive)
   border-radius: 20px;
   padding: 18px 20px 16px;
   user-select: none;
-}
-
-.header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 14px;
-}
-
-.header-left {
-  display: flex;
-  align-items: center;
-  gap: 7px;
-  font-size: 16px;
-  font-weight: 500;
-  perspective: 280px;
-  perspective-origin: center 120%;
-}
-
-.label-text {
-  color: #b0b0c7;
-  font-weight: 700;
-  line-height: 1.3;
-}
-
-.status-text {
-  display: inline-block;
-  color: #a1a1aa;
-  transition: color 0.3s, text-shadow 0.3s;
-  will-change: transform, opacity, filter;
-  vertical-align: middle;
-  transform-origin: center bottom;
-  transform: rotateX(0deg) translateY(0);
-}
-
-.status-text.glowing {
-  color: #c084fc;
-  text-shadow: 0 0 12px rgba(168, 85, 247, 0.6);
-  font-weight: 600;
-}
-
-@keyframes flipUpFromBottom {
-  0% {
-    opacity: 0;
-    transform: translateY(18px) rotateX(-80deg);
-    filter: blur(4px);
-  }
-  100% {
-    opacity: 1;
-    transform: translateY(0) rotateX(0deg);
-    filter: blur(0);
-  }
-}
-
-.status-text.animate-up {
-  animation: flipUpFromBottom 0.42s cubic-bezier(0.33, 1, 0.68, 1) forwards;
-}
-
-.help-btn {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  color: #a1a1aa;
-  transition: color 0.2s;
-  line-height: 1;
-  padding: 0;
-}
-
-.help-btn:hover { color: #d4d4d8; }
-
-.help-btn svg {
-  height: 18px;
-  width: auto;
-  display: block;
-  flex-shrink: 0;
-  shape-rendering: geometricPrecision;
 }
 
 .scale-labels {
@@ -390,30 +292,18 @@ input[type='range']::-moz-range-track {
   background: var(--surface, #fff);
   border: 1px solid var(--border, rgba(0, 0, 0, 0.1));
   color: var(--fg, #222);
-  width: 168px;
-  padding: 6px 8px;
-  border-radius: 12px;
+  width: 148px;
+  padding: 4px 7px 5px;
+  border-radius: 10px;
 }
 .card-shadow {
-  filter: drop-shadow(0 4px 10px color-mix(in oklch, var(--fg, #000) 14%, transparent));
+  filter: drop-shadow(0 3px 8px color-mix(in oklch, var(--fg, #000) 12%, transparent));
 }
-.header { margin-bottom: 5px; }
-.header-left { font-size: 11px; gap: 4px; }
-.label-text { color: var(--muted, #777); }
-.status-text {
-  color: var(--muted, #777);
-  font-family: var(--font-mono, ui-monospace, monospace);
-}
-.status-text.glowing {
-  color: var(--accent, #d8431d);
-  text-shadow: 0 0 12px color-mix(in oklch, var(--accent, #d8431d) 55%, transparent);
-}
-.help-btn { display: none; }
-.scale-labels { font-size: 9px; margin-bottom: 3px; letter-spacing: 0.02em; }
+.scale-labels { font-size: 8px; margin-bottom: 2px; letter-spacing: 0.02em; }
 /* 槽底保持深色：火焰 screen 混合需要暗背景才可见 */
-.track-wrapper { height: 22px; border-radius: 8px; }
-input[type='range']::-webkit-slider-thumb { width: 20px; height: 20px; border-radius: 7px; }
-input[type='range']::-moz-range-thumb { width: 18px; height: 18px; border-radius: 7px; }
+.track-wrapper { height: 20px; border-radius: 7px; }
+input[type='range']::-webkit-slider-thumb { width: 18px; height: 18px; border-radius: 6px; }
+input[type='range']::-moz-range-thumb { width: 16px; height: 16px; border-radius: 6px; }
 input[type='range'].glowing::-webkit-slider-thumb {
   box-shadow: 0 0.5px 1px rgba(0,0,0,0.18), 0 2px 6px rgba(0,0,0,0.25),
     0 0 22px color-mix(in oklch, var(--accent, #d8431d) 50%, transparent),
