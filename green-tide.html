@@ -239,7 +239,7 @@ section{position:relative;z-index:1}
 
 /* ───── 地图通用 ───── */
 .map-stage{position:relative;width:100%;border-radius:14px;overflow:hidden;background:linear-gradient(180deg,#04203f,#021530);border:1px solid var(--line)}
-.map-stage svg.basemap{width:100%;height:auto;display:block}
+.map-stage svg.basemap{width:100%;height:auto;display:block;position:relative;z-index:1}
 .map-stage canvas.bloom{position:absolute;inset:0;width:100%;height:100%;pointer-events:none}
 .land{fill:#0a2c2a;stroke:rgba(120,200,150,.25);stroke-width:1}
 .coast-glow{fill:none;stroke:rgba(122,216,79,.20);stroke-width:5}
@@ -250,8 +250,8 @@ section{position:relative;z-index:1}
 .src-lbl{fill:var(--amber);font-family:var(--mono)}
 .drift-path{fill:none;stroke:rgba(122,216,79,.5);stroke-width:1.6;stroke-dasharray:3 5;stroke-linecap:round}
 .sea-lbl{fill:rgba(150,200,222,.5);font-family:var(--hei);font-weight:600;letter-spacing:.2em}
-.map-tag{position:absolute;left:10px;top:10px;z-index:3}
-.map-legend{position:absolute;right:9px;bottom:9px;z-index:3;display:flex;flex-direction:column;gap:3px;font-family:var(--mono);font-size:10px;color:var(--fg-2);background:rgba(3,18,42,.66);padding:6px 8px;border-radius:8px;border:1px solid var(--line)}
+.map-tag{position:absolute;left:10px;top:10px;z-index:5}
+.map-legend{position:absolute;right:9px;bottom:9px;z-index:5;display:flex;flex-direction:column;gap:3px;font-family:var(--mono);font-size:10px;color:var(--fg-2);background:rgba(3,18,42,.66);padding:6px 8px;border-radius:8px;border:1px solid var(--line)}
 .map-legend i{display:inline-block;width:9px;height:9px;border-radius:2px;margin-right:5px;vertical-align:-1px}
 
 /* ───── 时间轴 scrubber ───── */
@@ -440,8 +440,8 @@ svg.flowsvg{width:100%;height:auto;display:block;overflow:visible}
 .fineprint{font-family:var(--mono);font-size:11px;color:var(--muted);margin-top:14px;display:flex;align-items:center;gap:7px;flex-wrap:wrap}
 
 /* ── 评审修复：触控 / 对齐 / 质感 / 可达性 ── */
-.map-stage canvas.bloom{z-index:1}
-.map-stage::after{content:'';position:absolute;inset:0;pointer-events:none;z-index:2;opacity:.45;mix-blend-mode:screen;
+.map-stage canvas.bloom{z-index:2}
+.map-stage::after{content:'';position:absolute;inset:0;pointer-events:none;z-index:3;opacity:.45;mix-blend-mode:screen;
   background-image:radial-gradient(rgba(150,205,185,.5) .5px,transparent 1.3px);background-size:6px 6px}
 .temp-marks{position:relative;height:15px;margin-top:5px}
 .temp-marks span{position:absolute;font-family:var(--mono);font-size:10px;color:var(--muted);white-space:nowrap}
@@ -464,6 +464,34 @@ svg.flowsvg{width:100%;height:auto;display:block;overflow:visible}
   .risk-seg.active circle.halo{animation:halo 1.9s ease-in-out infinite}
   @keyframes halo{0%,100%{opacity:.16}50%{opacity:.42}}
 }
+/* ── 堆料：洋流流场 / 卫星扫描线 / Hero 活体绿潮 / 年际条 / 自动巡览 ── */
+.map-stage canvas.flow{position:absolute;inset:0;width:100%;height:100%;pointer-events:none;z-index:0}
+.map-stage .scanline{position:absolute;left:0;right:0;height:58px;top:-14%;z-index:4;pointer-events:none;
+  background:linear-gradient(180deg,transparent,rgba(122,216,79,.07) 55%,rgba(122,216,79,.20));
+  mix-blend-mode:screen;animation:scan 7.5s linear infinite}
+@keyframes scan{0%{top:-14%;opacity:0}9%{opacity:.85}88%{opacity:.85}100%{top:106%;opacity:0}}
+#heroBloom{position:absolute;inset:0;width:100%;height:100%;z-index:1;pointer-events:none;
+  -webkit-mask-image:linear-gradient(95deg,transparent 26%,#000 80%);mask-image:linear-gradient(95deg,transparent 26%,#000 80%)}
+.tour-btn{display:inline-flex;align-items:center;gap:8px;margin-top:18px;font-family:var(--hei);font-weight:700;font-size:13.5px;
+  padding:10px 18px;border-radius:999px;border:1px solid var(--line-2);background:var(--card);min-height:44px;color:var(--fg);
+  transition:border-color .2s,background .2s,color .2s}
+.tour-btn:hover{border-color:var(--ulva);background:color-mix(in srgb,var(--ulva) 14%,var(--card))}
+.tour-btn.on{border-color:var(--amber);color:var(--amber)}
+.tour-btn .ti{color:var(--ulva-lt);font-size:11px}
+.tour-btn.on .ti{color:var(--amber)}
+.yearstrip .ys-h{font-family:var(--hei);font-weight:700;font-size:13px;color:var(--fg-2);margin-bottom:10px;display:flex;align-items:center;gap:8px}
+.ysvg{width:100%;height:auto;display:block;overflow:visible}
+.ys-bar{cursor:pointer}
+.ys-bar rect{transition:opacity .2s}
+.ys-bar:hover rect:first-of-type,.ys-bar.on rect:first-of-type{opacity:1;stroke:#eaf3f7;stroke-width:1}
+.ys-cap{font-size:12.5px;color:var(--fg-2);margin-top:12px;line-height:1.6;min-height:42px}
+.ys-cap b{font-family:var(--mono);color:var(--fg);font-size:14px}
+.ys-cap .ys-tip{display:block;font-family:var(--mono);font-size:10.5px;color:var(--dim);margin-top:3px}
+.ys-leg{display:flex;flex-wrap:wrap;gap:8px 13px;margin-top:10px;font-family:var(--mono);font-size:10.5px;color:var(--muted)}
+.ys-leg span{display:inline-flex;align-items:center;gap:5px}
+.ys-leg i{width:9px;height:9px;border-radius:2px}
+.ys-leg .ys-note{color:var(--dim)}
+
 @media (prefers-reduced-motion:reduce){
   *,*::before,*::after{animation-duration:.001ms!important;animation-iteration-count:1!important;transition-duration:.001ms!important;scroll-behavior:auto!important}
 }
@@ -481,6 +509,7 @@ svg.flowsvg{width:100%;height:auto;display:block;overflow:visible}
 
 <!-- ============ HERO ============ -->
 <section class="gt-hero" id="top">
+  <canvas id="heroBloom" aria-hidden="true"></canvas>
   <div class="h-inner">
     <div class="kicker">
       <span class="tag">课程作业 · 期末</span><span>海洋灾害的成因与数值预报</span><span>· 交互演示</span>
@@ -490,6 +519,7 @@ svg.flowsvg{width:100%;height:auto;display:block;overflow:visible}
     <p class="lead">把静态墙报里「监测→机制→模型→风险」的证据链，做成<em>可拖动时间轴、可调参数</em>的单页——看绿潮在黄海上<em>长出来、又漂走</em>。</p>
 
     <div class="chain-pills" id="heroPills"></div>
+    <button class="tour-btn" id="tourBtn"><span class="ti" aria-hidden="true">▷</span> 自动巡览这条预报链</button>
 
     <div class="hero-meta">
       <div class="who">汇报人：<b>黎达宏</b>
@@ -581,6 +611,8 @@ svg.flowsvg{width:100%;height:auto;display:block;overflow:visible}
       <div class="contrib" id="m2Contrib"></div>
       <button class="btn-reset" id="m2Reset">复位到常年</button>
     </div>
+
+    <div class="panel reveal yearstrip" id="m2Years" style="margin-top:16px;padding:16px 16px 14px"></div>
 
     <div class="stat-row reveal" style="--cc:#2e6fa8">
       <div class="stat"><div class="v">0.75</div><div class="l">苏北 6 级大风持续 ↔ 覆盖面积 r</div></div>
@@ -863,6 +895,8 @@ svg.flowsvg{width:100%;height:auto;display:block;overflow:visible}
     const svg=buildBasemap(host,{});
     const cv=document.createElement('canvas');cv.className='bloom';host.appendChild(cv);
     M1.host=host;M1.cv=cv;M1.ctx=cv.getContext('2d');
+    currentField(host);
+    const sc=document.createElement('div');sc.className='scanline';host.appendChild(sc);
     // 图例
     const lg=document.createElement('div');lg.className='map-legend';
     lg.innerHTML='<span><i style="background:#4F9D3A"></i>浒苔斑块</span><span><i style="background:#E29A2B;border-radius:50%"></i>源区 A–D</span>';
@@ -1169,6 +1203,8 @@ svg.flowsvg{width:100%;height:auto;display:block;overflow:visible}
   function buildM4(){
     const host=$('#m4Map');
     const svg=buildBasemap(host,{drift:false,src:false,cities:false});
+    currentField(host);
+    const scn=document.createElement('div');scn.className='scanline';host.appendChild(scn);
     el('text',{class:'sea-lbl',x:px(122.0),y:py(33.4),'font-size':9,'text-anchor':'middle',fill:'rgba(226,154,43,.6)'},svg).textContent='← 漂移来向';
     RISK.forEach((r,i)=>{
       const x=px(r.lon),y=py(r.lat),lv=riskLevel(r.idx);
@@ -1269,6 +1305,133 @@ svg.flowsvg{width:100%;height:auto;display:block;overflow:visible}
     draw();
   }
 
+  /* ===== 堆料A：洋流粒子流场（earth.nullschool 风，置于海图下层；海面透明处显现、陆地遮挡）===== */
+  function currentField(host){
+    const cv=document.createElement('canvas');cv.className='flow';host.appendChild(cv);
+    const ctx=cv.getContext('2d');let sx=1,sy=1,raf=null,vis=false;
+    const P=[];
+    function spawn(p,fresh){p.x=Math.random()*W;p.y=fresh?Math.random()*H:H+Math.random()*40;p.px=p.x;p.py=p.y;p.life=50+Math.random()*120;p.age=fresh?Math.random()*p.life:0;}
+    for(let i=0;i<88;i++){const p={};spawn(p,true);P.push(p);}
+    function vel(x,y){const a=0.55+0.42*Math.sin(y*0.017+x*0.0045);return [a,-0.92-0.26*Math.cos(x*0.02-y*0.012)];}
+    function size(){const r=host.getBoundingClientRect();const dpr=Math.min(devicePixelRatio||1,2);cv.width=Math.max(1,r.width*dpr);cv.height=Math.max(1,r.height*dpr);sx=cv.width/W;sy=cv.height/H;if(RM)drawStatic();}
+    function step(){
+      ctx.globalCompositeOperation='destination-out';ctx.fillStyle='rgba(0,0,0,0.10)';ctx.fillRect(0,0,cv.width,cv.height);
+      ctx.globalCompositeOperation='lighter';ctx.lineCap='round';ctx.lineWidth=1.1*sx;
+      for(const p of P){
+        p.px=p.x;p.py=p.y;const v=vel(p.x,p.y);p.x+=v[0]*1.5;p.y+=v[1]*1.5;p.age++;
+        if(p.age>p.life||p.x<-4||p.x>W+4||p.y<-6){spawn(p,false);continue;}
+        const al=0.20*Math.sin(Math.PI*p.age/p.life);if(al<=0.01)continue;
+        ctx.strokeStyle='rgba(120,214,200,'+al.toFixed(3)+')';
+        ctx.beginPath();ctx.moveTo(p.px*sx,p.py*sy);ctx.lineTo(p.x*sx,p.y*sy);ctx.stroke();
+      }
+    }
+    function drawStatic(){ctx.clearRect(0,0,cv.width,cv.height);ctx.globalCompositeOperation='lighter';ctx.lineCap='round';ctx.lineWidth=1.1*sx;for(const p of P){const v=vel(p.x,p.y);ctx.strokeStyle='rgba(120,214,200,0.10)';ctx.beginPath();ctx.moveTo(p.x*sx,p.y*sy);ctx.lineTo((p.x+v[0]*9)*sx,(p.y+v[1]*9)*sy);ctx.stroke();}}
+    function loop(){if(!vis||RM){raf=null;return;}step();raf=requestAnimationFrame(loop);}
+    size();
+    if('ResizeObserver'in window)new ResizeObserver(size).observe(host);
+    if('IntersectionObserver'in window){new IntersectionObserver(es=>{vis=es[0].isIntersecting;if(vis&&!RM&&!raf)raf=requestAnimationFrame(loop);else if(!vis&&raf){cancelAnimationFrame(raf);raf=null;}},{threshold:0}).observe(host);}
+    else{vis=true;if(!RM)raf=requestAnimationFrame(loop);}
+  }
+
+  /* ===== 堆料B：stat 数字滚动 ===== */
+  function countUp(){
+    if(!('IntersectionObserver'in window))return;
+    const io=new IntersectionObserver(es=>{es.forEach(e=>{if(e.isIntersecting){io.unobserve(e.target);animateNum(e.target);}});},{threshold:.45});
+    document.querySelectorAll('.stat .v').forEach(v=>{
+      const tn=v.firstChild;if(!tn||tn.nodeType!==3)return;
+      const raw=tn.textContent.trim();if(!/^\d+(\.\d+)?$/.test(raw))return;
+      v.dataset.t=raw;v.dataset.d=(raw.split('.')[1]||'').length;
+      if(!RM)tn.textContent=(+v.dataset.d>0?(0).toFixed(+v.dataset.d):'0');
+      io.observe(v);
+    });
+  }
+  function animateNum(v){
+    const target=+v.dataset.t,dec=+v.dataset.d,tn=v.firstChild;
+    if(RM){tn.textContent=target.toFixed(dec);return;}
+    const dur=1100;let t0=null;
+    function fr(now){if(t0===null)t0=now;const k=Math.min(1,(now-t0)/dur),e=1-Math.pow(1-k,3);tn.textContent=(target*e).toFixed(dec);if(k<1)requestAnimationFrame(fr);else tn.textContent=target.toFixed(dec);}
+    requestAnimationFrame(fr);
+  }
+
+  /* ===== 堆料C：大年/小年年际条（真实 ENSO 状态 + 定性相对规模，示意，强调多因子）===== */
+  const ENSOYRS=[
+    {y:2008,e:'拉',s:0.80},{y:2009,e:'拉',s:1.00},{y:2010,e:'厄',s:0.55},{y:2011,e:'拉',s:0.60},
+    {y:2012,e:'拉',s:0.35},{y:2013,e:'中',s:0.55},{y:2014,e:'中',s:0.78},{y:2015,e:'厄',s:0.62},
+    {y:2016,e:'厄',s:0.58},{y:2017,e:'中',s:0.40},{y:2018,e:'拉',s:0.30},{y:2019,e:'厄',s:0.60},
+    {y:2020,e:'中',s:0.28},{y:2021,e:'拉',s:0.98},{y:2022,e:'拉',s:0.38},{y:2023,e:'拉',s:0.55}
+  ];
+  const ENSOC={'厄':'#E29A2B','拉':'#2e6fa8','中':'#6e8a9c'};
+  function buildYearStrip(){
+    const host=$('#m2Years');if(!host)return;
+    host.innerHTML='<div class="ys-h">年际「大小年」· ENSO 背景 <span class="shi"></span></div>'+
+      '<svg class="ysvg" viewBox="0 0 320 116" aria-label="2008–2023 年际相对规模与 ENSO 状态（定性示意）"></svg>'+
+      '<div class="ys-cap" id="m2YearCap"></div>'+
+      '<div class="ys-leg"><span><i style="background:#E29A2B"></i>厄尔尼诺</span><span><i style="background:#2e6fa8"></i>拉尼娜</span><span><i style="background:#6e8a9c"></i>中性</span><span class="ys-note">柱高=相对规模·定性</span></div>';
+    const svg=host.querySelector('.ysvg');
+    const PAD=6,top=8,h=80,bw=(320-PAD*2)/ENSOYRS.length;
+    el('line',{x1:PAD,y1:top+h,x2:320-PAD,y2:top+h,stroke:'rgba(150,200,222,.18)','stroke-width':1},svg);
+    ENSOYRS.forEach((d,i)=>{
+      const x=PAD+i*bw,bh=Math.max(3,d.s*h),by=top+h-bh,cat=d.s>=0.85?'大':d.s<=0.42?'小':'常';
+      const g=el('g',{class:'ys-bar',id:'ys_'+i,tabindex:0,role:'button','aria-pressed':'false','aria-label':d.y+' '+cat+'年'},svg);
+      el('rect',{x:x+bw*0.16,y:by,width:bw*0.68,height:bh,rx:2,fill:ENSOC[d.e],opacity:cat==='小'?0.5:0.92},g);
+      if(cat==='大')el('text',{x:x+bw/2,y:by-2.5,'text-anchor':'middle','font-size':7,fill:'#7ad84f'},g).textContent='▲';
+      el('rect',{x:x,y:top,width:bw,height:h+20,fill:'transparent'},g);
+      g.addEventListener('click',()=>selYear(i));
+      g.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){selYear(i);e.preventDefault();}});
+    });
+    [0,5,10,15].forEach(i=>{el('text',{x:PAD+i*bw+bw/2,y:top+h+12,'text-anchor':'middle','font-size':8,fill:'#7c9eb0','font-family':'var(--mono)'},svg).textContent=ENSOYRS[i].y;});
+    selYear(13);
+  }
+  function selYear(i){
+    const d=ENSOYRS[i],cat=d.s>=0.85?'大年':d.s<=0.42?'小年':'常年';
+    const enso={'厄':'厄尔尼诺','拉':'拉尼娜','中':'中性'}[d.e];
+    document.querySelectorAll('.ys-bar').forEach((g,gi)=>{g.classList.toggle('on',gi===i);g.setAttribute('aria-pressed',gi===i?'true':'false');});
+    const extra=d.y===2021?'：覆盖范围广、生物量高、持续偏长，被广泛报道为创纪录的大年。':d.y===2009?'：早期历史大暴发之一。':cat==='小年'?'：相对偏小（含源头治理等因素）。':'：接近常年水平。';
+    const cc={'厄':'#E29A2B','拉':'#7fb0d8','中':'#a9bcc7'}[d.e];
+    $('#m2YearCap').innerHTML='<b>'+d.y+'</b> · '+enso+' · <span style="color:'+cc+';font-weight:700">'+cat+'</span>'+extra+'<span class="ys-tip">ENSO 只是其一，大小年是营养盐 / 苏北大风 / 降水等多因子复合的结果</span>';
+  }
+
+  /* ===== 堆料D-1：Hero 活体绿潮 ===== */
+  function heroBloom(){
+    const cv=$('#heroBloom');if(!cv)return;const ctx=cv.getContext('2d');
+    let w=1,h=1,raf=null,t=0,vis=true;
+    const blobs=[];for(let i=0;i<4;i++)blobs.push({x:0.42+Math.random()*0.5,y:0.28+Math.random()*0.5,r:0.16+Math.random()*0.18,ph:Math.random()*6.28,sp:0.18+Math.random()*0.28});
+    function size(){const dpr=Math.min(devicePixelRatio||1,2);w=cv.width=Math.max(1,cv.clientWidth*dpr);h=cv.height=Math.max(1,cv.clientHeight*dpr);}
+    function draw(){
+      ctx.clearRect(0,0,w,h);ctx.globalCompositeOperation='lighter';
+      blobs.forEach(b=>{const pulse=0.6+0.4*Math.sin(t*b.sp+b.ph);
+        const cx=(b.x+0.05*Math.sin(t*0.1+b.ph))*w,cy=(b.y+0.04*Math.cos(t*0.12+b.ph))*h,rr=b.r*pulse*Math.min(w,h)*1.4;
+        const g=ctx.createRadialGradient(cx,cy,0,cx,cy,rr);
+        g.addColorStop(0,'rgba(122,216,79,'+(0.13*pulse).toFixed(3)+')');
+        g.addColorStop(0.5,'rgba(31,138,112,'+(0.07*pulse).toFixed(3)+')');
+        g.addColorStop(1,'rgba(13,74,122,0)');
+        ctx.fillStyle=g;ctx.beginPath();ctx.arc(cx,cy,rr,0,6.2832);ctx.fill();});
+    }
+    function loop(){if(RM||!vis){raf=null;return;}t+=0.016;draw();raf=requestAnimationFrame(loop);}
+    size();draw();
+    addEventListener('resize',()=>{size();draw();},{passive:true});
+    document.addEventListener('visibilitychange',()=>{vis=!document.hidden;if(vis&&!RM&&!raf)raf=requestAnimationFrame(loop);});
+    if('IntersectionObserver'in window)new IntersectionObserver(es=>{vis=es[0].isIntersecting;if(vis&&!RM&&!raf)raf=requestAnimationFrame(loop);else if(!vis&&raf){cancelAnimationFrame(raf);raf=null;}},{threshold:0}).observe(cv);
+    if(!RM)raf=requestAnimationFrame(loop);
+  }
+
+  /* ===== 堆料D-2：自动巡览 ===== */
+  const TOUR={on:false,timer:null};
+  function autoTour(){
+    const btn=$('#tourBtn');if(!btn)return;
+    const stops=['m1','m2','m3','m4','conclusion'];
+    function setBtn(){btn.innerHTML=TOUR.on?'<span class="ti" aria-hidden="true">◼</span> 停止巡览':'<span class="ti" aria-hidden="true">▷</span> 自动巡览这条预报链';btn.classList.toggle('on',TOUR.on);}
+    function stop(){TOUR.on=false;if(TOUR.timer){clearTimeout(TOUR.timer);TOUR.timer=null;}setPlay(false);setBtn();}
+    function go(i){
+      if(!TOUR.on)return;
+      if(i>=stops.length){stop();return;}
+      const t=document.getElementById(stops[i]);if(t)t.scrollIntoView({behavior:RM?'auto':'smooth',block:'start'});
+      if(stops[i]==='m1'&&!RM){M1.inView=true;M1.t=0;updateM1();setPlay(true);}
+      TOUR.timer=setTimeout(()=>{if(stops[i]==='m1')setPlay(false);go(i+1);}, i===0?5600:4400);
+    }
+    btn.addEventListener('click',()=>{if(TOUR.on)stop();else{TOUR.on=true;setBtn();go(0);}});
+  }
+
   /* ===== init ===== */
   function init(){
     try{buildChain();}catch(e){console.warn('chain',e);}
@@ -1278,6 +1441,10 @@ svg.flowsvg{width:100%;height:auto;display:block;overflow:visible}
     try{buildM4();}catch(e){console.warn('m4',e);}
     try{observers();}catch(e){console.warn('obs',e);}
     try{oceanBG();}catch(e){console.warn('bg',e);}
+    try{countUp();}catch(e){console.warn('count',e);}
+    try{buildYearStrip();}catch(e){console.warn('years',e);}
+    try{heroBloom();}catch(e){console.warn('herob',e);}
+    try{autoTour();}catch(e){console.warn('tour',e);}
     // 平滑锚点（避开 sticky 顶栏）
     document.querySelectorAll('a[href^="#"]').forEach(a=>{
       a.addEventListener('click',e=>{const id=a.getAttribute('href');if(id.length<2)return;const t=document.querySelector(id);if(!t)return;e.preventDefault();const off=64;const y=t.getBoundingClientRect().top+scrollY-off;scrollTo({top:y,behavior:RM?'auto':'smooth'});});
