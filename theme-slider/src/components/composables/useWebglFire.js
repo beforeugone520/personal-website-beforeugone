@@ -1,7 +1,7 @@
 import { watch, onMounted, onBeforeUnmount, nextTick } from 'vue'
 import { VERT, FRAG_SIM, FRAG_BLUR, FRAG_COMP } from '../shaders/index.js'
 
-export function useWebglFire(canvasRef, sliderValue, isActive) {
+export function useWebglFire(canvasRef, sliderValue, isActive, isDark) {
   /* ── internal state ───────────────────────── */
   let gl = null
   let canvasEl = null
@@ -24,6 +24,7 @@ export function useWebglFire(canvasRef, sliderValue, isActive) {
 
   const U = {
     simTime: null, simSlider: null, simElapsed: null, simBack: null,
+    simDir: null, simCEmber: null, simCMid: null, simCHot: null,
     blurDir: null, blurExt: null, blurTex: null, blurRes: null,
     compScene: null, compGlow: null,
   }
@@ -31,9 +32,18 @@ export function useWebglFire(canvasRef, sliderValue, isActive) {
   /* ── cached reactive values (no per-frame tracking) ─── */
   let cachedActive = false
   let cachedSlider = 0.7
+  let cachedDir = 1.0            // +1 深色端(左 thumb→右) / -1 浅色端(镜像)
+  // 两套火焰配色，与站点 token 呼应：深色端=冷紫焰，浅色端=暖朱橙焰(#7a1e0a→#ff6a1a→#fff0d8)
+  const PAL_DARK = { e: [0.28, 0.10, 0.58], m: [0.62, 0.32, 1.0], h: [1.0, 0.94, 0.98] }
+  const PAL_LIGHT = { e: [0.478, 0.118, 0.039], m: [1.0, 0.416, 0.102], h: [1.0, 0.941, 0.847] }
+  let cachedPal = PAL_DARK
 
   watch(isActive, v => { cachedActive = v }, { immediate: true })
   watch(sliderValue, v => { cachedSlider = v / 100 }, { immediate: true })
+  if (isDark) watch(isDark, v => {
+    cachedDir = v ? 1.0 : -1.0
+    cachedPal = v ? PAL_DARK : PAL_LIGHT
+  }, { immediate: true })
 
   watch(isActive, now => {
     if (now && ultraStart == null) ultraStart = performance.now()
@@ -173,6 +183,10 @@ export function useWebglFire(canvasRef, sliderValue, isActive) {
     U.simSlider = gl.getUniformLocation(simProg, 'u_slider')
     U.simElapsed = gl.getUniformLocation(simProg, 'u_elapsed')
     U.simBack = gl.getUniformLocation(simProg, 'u_back')
+    U.simDir = gl.getUniformLocation(simProg, 'u_dir')
+    U.simCEmber = gl.getUniformLocation(simProg, 'u_cEmber')
+    U.simCMid = gl.getUniformLocation(simProg, 'u_cMid')
+    U.simCHot = gl.getUniformLocation(simProg, 'u_cHot')
     U.blurDir = gl.getUniformLocation(blurProg, 'u_dir')
     U.blurExt = gl.getUniformLocation(blurProg, 'u_ext')
     U.blurTex = gl.getUniformLocation(blurProg, 'u_tex')
@@ -290,6 +304,10 @@ export function useWebglFire(canvasRef, sliderValue, isActive) {
     gl.uniform1f(U.simTime, t * 0.001)
     gl.uniform1f(U.simSlider, sv)
     gl.uniform1f(U.simElapsed, elapsed)
+    gl.uniform1f(U.simDir, cachedDir)
+    gl.uniform3fv(U.simCEmber, cachedPal.e)
+    gl.uniform3fv(U.simCMid, cachedPal.m)
+    gl.uniform3fv(U.simCHot, cachedPal.h)
     gl.activeTexture(gl.TEXTURE0)
     gl.bindTexture(gl.TEXTURE_2D, simA.tex)
     gl.uniform1i(U.simBack, 0)

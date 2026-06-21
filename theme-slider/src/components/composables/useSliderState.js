@@ -8,8 +8,9 @@ export function useSliderState() {
 
   const theme = computed(() => valueToTheme(sliderValue.value))
   const isDark = computed(() => theme.value === THEMES.DARK)
-  const isActive = isDark                       // 火焰/辉光绑定到“深色/夜”端
-  const isFull = computed(() => sliderValue.value === 100)
+  // 火焰/辉光现在两端都点：深色端紫焰、浅色端镜像暖焰。isDark 决定方向与配色。
+  const isActive = computed(() => true)
+  const isFull = computed(() => sliderValue.value === 0 || sliderValue.value === 100)
   const statusLabel = computed(() => (isDark.value ? '深色' : '浅色'))
 
   function clearAnimation() { if (timer != null) { clearTimeout(timer); timer = null } isAnimating.value = false }
@@ -21,5 +22,5 @@ export function useSliderState() {
   function onInput(e) { sliderValue.value = parseInt(e.target.value, 10) }
 
   onBeforeUnmount(clearAnimation)
-  return { sliderValue, isActive, isFull, isAnimating, statusLabel, theme, onInput }
+  return { sliderValue, isActive, isDark, isFull, isAnimating, statusLabel, theme, onInput }
 }

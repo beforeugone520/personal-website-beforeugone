@@ -70,7 +70,7 @@ import { useSliderState } from './composables/useSliderState'
 import { useWebglFire } from './composables/useWebglFire'
 
 /* ── slider state ─────────────────────────── */
-const { sliderValue, isActive, isFull, onInput } = useSliderState()
+const { sliderValue, isActive, isDark, isFull, onInput } = useSliderState()
 
 /* ── clip-path IDs ────────────────────────── */
 const uid = Math.random().toString(36).slice(2, 8)
@@ -81,18 +81,23 @@ const cardClip = computed(() => ({ clipPath: `url(#${clipId})` }))
 const trackClip = computed(() => ({ clipPath: `url(#${clipTrackId})` }))
 
 const canvasMask = computed(() => {
-  const p = Math.min(sliderValue.value + 2, 100)
-  return {
-    maskImage: `linear-gradient(to right, black 0%, black ${p}%, transparent ${p}%)`,
-    WebkitMaskImage: `linear-gradient(to right, black 0%, black ${p}%, transparent ${p}%)`,
+  // 深色端 thumb 在右、火焰尾迹铺向左；浅色端镜像：thumb 在左、火焰铺向右。
+  // mask 始终只露出 thumb 到其归属端点之间，避免火焰溢出到对侧空槽。
+  if (isDark.value) {
+    const p = Math.min(sliderValue.value + 2, 100)
+    const g = `linear-gradient(to right, black 0%, black ${p}%, transparent ${p}%)`
+    return { maskImage: g, WebkitMaskImage: g }
   }
+  const q = Math.max(sliderValue.value - 2, 0)
+  const g = `linear-gradient(to right, transparent ${q}%, black ${q}%, black 100%)`
+  return { maskImage: g, WebkitMaskImage: g }
 })
 
 /* ── webgl engine ─────────────────────────── */
 const canvasRef = ref(null)
 // reduced-motion：不跑 WebGL 火焰（守站点无障碍纪律）
 const reduceMotion = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches
-if (!reduceMotion) useWebglFire(canvasRef, sliderValue, isActive)
+if (!reduceMotion) useWebglFire(canvasRef, sliderValue, isActive, isDark)
 </script>
 
 <style scoped>

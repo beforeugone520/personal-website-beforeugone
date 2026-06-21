@@ -67,6 +67,7 @@ function makeGl() {
     uniform1i: vi.fn(),
     drawArrays: vi.fn(),
     uniform2f: vi.fn(),
+    uniform3fv: vi.fn(),
   }
 }
 
@@ -104,7 +105,7 @@ describe('useWebglFire 初始化', () => {
     const app = createApp({
       setup() {
         const canvasRef = ref(null)
-        useWebglFire(canvasRef, ref(100), ref(true))
+        useWebglFire(canvasRef, ref(100), ref(true), ref(true))
         return () => h('canvas', { ref: canvasRef })
       },
     })
