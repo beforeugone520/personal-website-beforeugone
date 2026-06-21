@@ -188,13 +188,6 @@ section{position:relative;z-index:1}
 .hero-meta .who{font-family:var(--hei);font-size:14px;color:var(--fg)}
 .hero-meta .who b{color:var(--ulva-lt);font-weight:800}
 .hero-meta .who span{display:block;color:var(--muted);font-size:12.5px;font-weight:400;font-family:var(--song);margin-top:3px}
-.qr-card{
-  display:flex;align-items:center;gap:11px;background:rgba(255,255,255,.95);border-radius:12px;
-  padding:8px 12px 8px 8px;box-shadow:0 10px 30px -12px rgba(0,0,0,.6);
-}
-.qr-card img{width:58px;height:58px;border-radius:4px}
-.qr-card .qt{font-family:var(--hei);font-size:11.5px;line-height:1.45;color:#0d2b45;font-weight:700}
-.qr-card .qt span{display:block;font-weight:400;color:#3c5566;font-size:10.5px;font-family:var(--mono)}
 
 .scroll-cue{
   position:absolute;left:50%;bottom:calc(var(--safe-b) + 14px);transform:translateX(-50%);
@@ -502,10 +495,6 @@ svg.flowsvg{width:100%;height:auto;display:block;overflow:visible}
       <div class="who">汇报人：<b>黎达宏</b>
         <span>深圳大学 · 生命与海洋科学学院 · 海洋科学　|　2026 年 6 月</span>
       </div>
-      <a class="qr-card" href="#top" aria-label="本页二维码">
-        <img src="assets/green-tide-qr.svg" alt="扫码在手机打开本演示页">
-        <div class="qt">扫码看演示<span>手机 · 竖屏</span></div>
-      </a>
     </div>
   </div>
   <div class="scroll-cue" aria-hidden="true"><span>SCROLL</span><span class="ar"></span></div>
@@ -533,7 +522,7 @@ svg.flowsvg{width:100%;height:auto;display:block;overflow:visible}
     </div>
 
     <div class="map-stage reveal" id="m1Map" style="margin-top:22px">
-      <div class="map-tag"><span class="shi">示意底图 · Ulva prolifera</span></div>
+      <div class="map-tag"><span class="shi">底图 · Ulva prolifera</span></div>
     </div>
 
     <div class="scrub-wrap reveal panel" style="padding:16px 16px 18px;margin-top:16px;border-radius:14px">
@@ -576,7 +565,7 @@ svg.flowsvg{width:100%;height:auto;display:block;overflow:visible}
     <div class="reveal">
       <span class="eyebrow"><span class="ix">02</span> 年际机制 · 复合驱动</span>
       <h2>滑动四个驱动因子，看「大小年」如何形成</h2>
-      <p class="dek">最大覆盖面积的年际波动，是气候尺度 ENSO、季节尺度天气系统、年际尺度陆源活动的复合结果。下面是一个 <span class="shi">示意权重模型</span>，权重大小贴合文献相关性，并非真实预报。</p>
+      <p class="dek">最大覆盖面积的年际波动，是气候尺度 ENSO、季节尺度天气系统、年际尺度陆源活动的复合结果。下面是一个 <span class="shi">权重模型</span>，权重大小贴合文献相关性，并非真实预报。</p>
     </div>
 
     <div class="panel reveal" style="margin-top:22px;overflow:hidden">
@@ -613,7 +602,7 @@ svg.flowsvg{width:100%;height:auto;display:block;overflow:visible}
     </div>
 
     <div class="panel reveal flow" style="margin-top:22px;padding:18px 14px">
-      <svg class="flowsvg" id="m3Flow" viewBox="0 0 360 320" aria-label="LTRANS-GT 物理–生态耦合框架，可点击节点"></svg>
+      <svg class="flowsvg" id="m3Flow" viewBox="0 0 360 344" aria-label="LTRANS-GT 物理–生态耦合框架，可点击节点"></svg>
     </div>
     <div class="node-list reveal" id="m3List" role="group" aria-label="模型环节快捷选择"></div>
     <div class="panel reveal flow-detail" id="m3Detail"></div>
@@ -650,7 +639,7 @@ svg.flowsvg{width:100%;height:auto;display:block;overflow:visible}
     </div>
 
     <div class="map-stage risk-stage reveal" id="m4Map" style="margin-top:22px">
-      <div class="map-tag"><span class="shi">示意风险图 · 致险×脆弱</span></div>
+      <div class="map-tag"><span class="shi">风险图 · 致险×脆弱</span></div>
     </div>
     <div class="risk-segs-list reveal" id="m4List" role="group" aria-label="岸段选择"></div>
 
@@ -1083,17 +1072,17 @@ svg.flowsvg{width:100%;height:auto;display:block;overflow:visible}
      模块 3：耦合模型流程 + 温度阈值
      ============================================================ */
   const FNODES={
-    in1:{t:'风场 + 流场',s:'HYCOM · FVCOM · ROMS',role:'输运因子',c:'#2e6fa8',x:14,y:18,w:158,h:54,
+    in1:{t:'风场 + 流场',s:'HYCOM · FVCOM · ROMS',role:'输运因子',c:'#2e6fa8',x:10,y:14,w:162,h:54,
       d:'以海表风场与表层流场驱动浒苔粒子运动。HYCOM（混合坐标·大尺度）、FVCOM（非结构有限体积·近岸河口复杂地形）、ROMS（区域海洋）为粒子输运提供速度场与温度场。'},
-    in2:{t:'温度·光照·营养盐',s:'氮 / 磷',role:'生态因子',c:'#4F9D3A',x:188,y:18,w:158,h:54,
+    in2:{t:'温度·光照·营养盐',s:'氮 / 磷',role:'生态因子',c:'#4F9D3A',x:188,y:14,w:162,h:54,
       d:'温度、光照、氮磷营养盐限制生长率，温度同时影响死亡率。生长期温光通常适宜（16–21℃），并非年际差异主因；营养盐浓度年际差异明显，是生长期主控。'},
-    drift:{t:'漂移模块',s:'粒子输运·路径转向',role:'where',c:'#37b6ce',x:14,y:120,w:158,h:50,
+    drift:{t:'漂移模块',s:'粒子输运·路径转向',role:'where',c:'#37b6ce',x:10,y:116,w:162,h:52,
       d:'风流决定浒苔“去哪里”。改变藻体所处位置，使其进入不同的温度、光照与营养盐环境，从而间接调节生长速度与规模——风流不直接决定生物量。'},
-    eco:{t:'生态模块',s:'生长率 / 死亡率',role:'how much',c:'#4F9D3A',x:188,y:120,w:158,h:50,
+    eco:{t:'生态模块',s:'生长率 / 死亡率',role:'how much',c:'#4F9D3A',x:188,y:116,w:162,h:52,
       d:'温光营养盐决定浒苔“长多少、活多久”。敏感性试验表明：适宜温光背景下，营养盐显著影响生长阶段的持续时间与最大生物量。'},
-    out:{t:'漂移路径 · 覆盖面积 · 生物量',s:'预报输出',role:'forecast',c:'#7ad84f',x:54,y:214,w:252,h:48,
+    out:{t:'漂移路径 · 覆盖面积 · 生物量',s:'预报输出',role:'forecast',c:'#7ad84f',x:62,y:214,w:236,h:50,
       d:'耦合输出动态预报：模拟覆盖黄海及邻近海域、时段 2008—2017 年并经卫星验证，能较好再现漂移路径与转向时间，过程约 62–94 d，与遥感季节节律互证。'},
-    verify:{t:'卫星遥感验证',s:'迭代校正',role:'validate',c:'#E29A2B',x:248,y:120,w:98,h:50,dash:true,
+    verify:{t:'卫星遥感验证',s:'迭代校正',role:'validate',c:'#E29A2B',x:104,y:286,w:152,h:48,dash:true,
       d:'模型须与观测迭代验证：海洋数值模型已从单纯水动力描述，扩展到与生态、生物、粒子输运耦合；由静态监测走向可靠预报，离不开遥感的初始场与验证基准。'}
   };
   function buildM3(){
@@ -1103,10 +1092,11 @@ svg.flowsvg{width:100%;height:auto;display:block;overflow:visible}
     el('path',{d:'M0,0 L7,3 L0,6 Z',fill:'rgba(122,216,79,.7)'},mk);
     // 连线
     const edge=(x1,y1,x2,y2,dash)=>el('path',{class:'flow-edge'+(dash?' dash':''),d:'M'+x1+','+y1+' L'+x2+','+y2,'marker-end':'url(#fa)'},svg);
-    edge(93,72,93,120); edge(267,72,267,120);
-    edge(93,170,150,214); edge(267,170,210,214);
-    // verify 反馈虚线
-    el('path',{class:'flow-edge dash',d:'M297,120 C297,96 297,86 297,80 L297,40 C297,30 200,28 180,42',fill:'none','marker-end':'url(#fa)'},svg);
+    edge(91,68,91,116); edge(269,68,269,116);
+    edge(91,168,150,214); edge(269,168,210,214);
+    edge(180,264,180,286);
+    // 卫星遥感验证 → 反馈回输入（右侧虚线回路）
+    el('path',{class:'flow-edge dash',d:'M256,310 L354,310 L354,41 L350,41',fill:'none','marker-end':'url(#fa)'},svg);
     // 节点
     for(const k in FNODES){
       const n=FNODES[k];
@@ -1178,7 +1168,7 @@ svg.flowsvg{width:100%;height:auto;display:block;overflow:visible}
   let M4cur=0;
   function buildM4(){
     const host=$('#m4Map');
-    const svg=buildBasemap(host,{drift:false,src:false});
+    const svg=buildBasemap(host,{drift:false,src:false,cities:false});
     el('text',{class:'sea-lbl',x:px(122.0),y:py(33.4),'font-size':9,'text-anchor':'middle',fill:'rgba(226,154,43,.6)'},svg).textContent='← 漂移来向';
     RISK.forEach((r,i)=>{
       const x=px(r.lon),y=py(r.lat),lv=riskLevel(r.idx);
