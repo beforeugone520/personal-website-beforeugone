@@ -1,0 +1,1300 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>黄海浒苔绿潮预报链 · 交互演示 | BeforeUgone</title>
+<meta name="description" content="把黄海浒苔绿潮『监测→机制→模型→风险』的证据链做成可拖动时间轴、可调参数的交互单页：看绿潮在黄海上长出来又漂走。课程作业 · 移动优先 H5。">
+<meta name="theme-color" content="#03193f">
+<meta property="og:title" content="黄海浒苔绿潮预报链 · 交互演示">
+<meta property="og:description" content="监测→机制→模型→风险，一条可交互的绿潮预报链。">
+<meta property="og:type" content="website">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%2303193f'/%3E%3Cpath d='M5 21c4-3 6 2 10-1s6 2 11-1' stroke='%234F9D3A' stroke-width='2.4' fill='none' stroke-linecap='round'/%3E%3Cpath d='M5 25c4-3 6 2 10-1s6 2 11-1' stroke='%231f8a70' stroke-width='2' fill='none' stroke-linecap='round' opacity='.7'/%3E%3C/svg%3E">
+<style>
+/* ============================================================
+   黄海浒苔绿潮预报链 · 交互演示  green-tide.html
+   深海卫星遥感氛围 · 海洋蓝绿配色 · 移动优先 · 零运行时依赖
+   标题黑体 / 正文宋体 / 数据等宽。配色与课程墙报统一。
+   ============================================================ */
+:root{
+  --sea-0:#020f23;        /* 最深海 */
+  --sea-1:#03193f;        /* 深海底 */
+  --sea-2:#08284e;        /* 面板 */
+  --sea-3:#0d335f;        /* 面板高亮 */
+  --navy:#0d4a7a;         /* 深海蓝 */
+  --navy-lt:#2e6fa8;
+  --teal:#1f8a70;         /* 青绿 */
+  --ulva:#4F9D3A;         /* 浒苔绿 */
+  --ulva-lt:#7ad84f;
+  --amber:#E29A2B;        /* 暖琥珀 */
+  --red:#C0392B;
+
+  --r1:#4F9D3A; --r2:#C6CF3A; --r3:#E29A2B; --r4:#C0392B;  /* 风险四级 */
+
+  --fg:#eaf3f7;
+  --fg-2:#bcd6e2;
+  --muted:#86abbd;
+  --dim:#7c9eb0;
+  --line:rgba(150,200,222,.16);
+  --line-2:rgba(150,200,222,.28);
+  --glass:rgba(7,30,58,.62);
+  --glass-2:rgba(10,42,74,.72);
+  --card:rgba(8,32,62,.66);
+
+  --hei:"HarmonyOS Sans SC","HarmonyOS Sans","PingFang SC","Microsoft YaHei","Heiti SC",system-ui,sans-serif;
+  --song:"Songti SC","Source Han Serif SC","Noto Serif SC","SimSun",STSong,serif;
+  --mono:ui-monospace,"JetBrains Mono","SF Mono",Menlo,"Cascadia Code",monospace;
+
+  --maxw:680px;
+  --pad:clamp(16px,5vw,26px);
+  --radius:16px;
+  --ease:cubic-bezier(.22,1,.36,1);
+
+  --safe-t:env(safe-area-inset-top,0px);
+  --safe-b:env(safe-area-inset-bottom,0px);
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html{-webkit-text-size-adjust:100%;scroll-behavior:smooth}
+@media (prefers-reduced-motion:reduce){html{scroll-behavior:auto}}
+body{
+  font-family:var(--song);
+  color:var(--fg);
+  background:var(--sea-1);
+  line-height:1.72;
+  font-size:16px;
+  -webkit-font-smoothing:antialiased;
+  text-rendering:optimizeLegibility;
+  overflow-x:hidden;
+  font-feature-settings:"kern","liga";
+}
+/* 深海层叠氛围：径向辉光 + 顶部冷光，固定铺底 */
+body::before{
+  content:'';position:fixed;inset:0;z-index:-2;pointer-events:none;
+  background:
+    radial-gradient(120% 70% at 78% -8%, rgba(31,138,112,.20), transparent 56%),
+    radial-gradient(120% 80% at 12% 8%, rgba(13,74,122,.42), transparent 60%),
+    radial-gradient(140% 90% at 50% 118%, rgba(2,15,35,.9), transparent 60%),
+    linear-gradient(180deg,#041d40 0%, #03193f 40%, #02132f 100%);
+}
+/* 卫星影像颗粒 */
+body::after{
+  content:'';position:fixed;inset:0;z-index:-1;pointer-events:none;opacity:.05;mix-blend-mode:screen;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+#ocean-bg{position:fixed;inset:0;z-index:-1;width:100%;height:100%;pointer-events:none;opacity:.55}
+img,svg,canvas{display:block;max-width:100%}
+a{color:inherit;text-decoration:none}
+button{font:inherit;color:inherit;cursor:pointer;background:none;border:none}
+::selection{background:rgba(79,157,58,.32)}
+:focus-visible{outline:2px solid var(--ulva-lt);outline-offset:3px;border-radius:6px}
+
+h1,h2,h3,h4,.hei{font-family:var(--hei);font-weight:800;letter-spacing:-.01em;text-wrap:balance}
+.mono{font-family:var(--mono);font-variant-numeric:tabular-nums}
+.shi{
+  display:inline-flex;align-items:center;gap:4px;
+  font-family:var(--mono);font-size:10.5px;letter-spacing:.06em;
+  color:var(--amber);border:1px solid color-mix(in srgb,var(--amber) 50%,transparent);
+  border-radius:999px;padding:1px 7px;vertical-align:middle;white-space:nowrap;
+  background:color-mix(in srgb,var(--amber) 12%,transparent);
+}
+.shi::before{content:"示意";font-weight:600}
+.shi.en::before{content:"illustrative"}
+
+/* ───── 顶栏 ───── */
+.gt-top{
+  position:fixed;top:0;left:0;right:0;z-index:50;
+  padding:calc(var(--safe-t) + 8px) var(--pad) 8px;
+  display:flex;align-items:center;gap:12px;
+  background:linear-gradient(180deg,rgba(3,18,42,.86),rgba(3,18,42,.3) 70%,transparent);
+  backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);
+  transition:background .3s;
+}
+.gt-top .home{
+  display:inline-flex;align-items:center;gap:7px;font-family:var(--mono);font-size:13px;
+  color:var(--fg-2);padding:7px 6px;min-height:44px;flex:0 0 auto;
+}
+.gt-top .home:hover{color:var(--ulva-lt)}
+.gt-top .home .bk{font-size:15px}
+.gt-top .ttl{
+  flex:1;min-width:0;font-family:var(--hei);font-weight:700;font-size:13.5px;color:var(--fg-2);
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;opacity:0;transition:opacity .35s;
+}
+.gt-top.scrolled .ttl{opacity:1}
+.chain-dots{display:flex;gap:6px;flex:0 0 auto;align-items:center}
+.chain-dots button{
+  width:44px;height:44px;display:grid;place-items:center;border-radius:999px;position:relative;
+}
+.chain-dots .cd{width:8px;height:8px;border-radius:999px;background:var(--dim);transition:all .3s var(--ease)}
+.chain-dots button[aria-current="true"] .cd{background:var(--ulva-lt);box-shadow:0 0 0 4px rgba(122,216,79,.18);transform:scale(1.25)}
+.chain-dots button.done .cd{background:var(--teal)}
+
+/* ───── 通用区块 ───── */
+section{position:relative;z-index:1}
+.wrap{max-width:var(--maxw);margin-inline:auto;padding-inline:var(--pad)}
+.module{padding-block:clamp(56px,12vw,104px)}
+.eyebrow{
+  display:inline-flex;align-items:center;gap:9px;font-family:var(--mono);
+  font-size:12px;letter-spacing:.16em;text-transform:uppercase;color:var(--ulva-lt);margin-bottom:14px;
+}
+.eyebrow .ix{
+  font-weight:700;color:var(--sea-1);background:var(--ulva-lt);border-radius:6px;
+  padding:1px 7px;letter-spacing:0;font-family:var(--hei);
+}
+.module h2{font-size:clamp(25px,6.6vw,38px);line-height:1.12;margin-bottom:14px}
+.module .dek{font-size:clamp(15.5px,4vw,17.5px);color:var(--fg-2);max-width:42ch;margin-bottom:8px}
+.reveal{opacity:0;transform:translateY(22px)}
+.reveal.in{opacity:1;transform:none;transition:opacity .8s var(--ease),transform .8s var(--ease)}
+@media (prefers-reduced-motion:reduce){.reveal{opacity:1;transform:none}}
+
+/* ───── HERO ───── */
+.gt-hero{
+  min-height:100vh;min-height:100svh;min-height:100dvh;display:flex;flex-direction:column;justify-content:flex-end;
+  padding:calc(var(--safe-t) + 76px) var(--pad) clamp(30px,8vw,60px);
+  position:relative;overflow:hidden;
+}
+.gt-hero .h-inner{max-width:var(--maxw);margin-inline:auto;width:100%;position:relative;z-index:2}
+.kicker{
+  font-family:var(--mono);font-size:12.5px;letter-spacing:.1em;color:var(--muted);
+  display:flex;flex-wrap:wrap;gap:6px 12px;margin-bottom:20px;align-items:center;
+}
+.kicker .tag{color:var(--ulva-lt)}
+.gt-hero h1{
+  font-size:clamp(34px,10vw,62px);line-height:1.02;letter-spacing:-.02em;margin-bottom:8px;
+  text-shadow:0 4px 30px rgba(0,0,0,.5);
+}
+.gt-hero h1 .grad{
+  background:linear-gradient(95deg,#7ad84f,#4F9D3A 36%,#1f8a70 70%,#37b6ce);
+  -webkit-background-clip:text;background-clip:text;color:transparent;
+}
+.gt-hero .sub{font-size:clamp(16px,4.4vw,21px);color:var(--fg-2);margin:10px 0 4px;font-family:var(--hei);font-weight:500}
+.gt-hero .lead{font-size:clamp(15px,4vw,17.5px);color:var(--fg-2);max-width:48ch;margin-top:16px}
+.gt-hero .lead em{font-style:normal;color:var(--ulva-lt);font-weight:700;background:linear-gradient(transparent 62%,rgba(79,157,58,.28) 62%)}
+
+.chain-pills{display:flex;flex-wrap:wrap;gap:8px;margin-top:24px}
+.chain-pills .cp{
+  display:inline-flex;align-items:center;gap:8px;font-family:var(--hei);font-weight:600;font-size:13.5px;
+  padding:8px 14px;border-radius:999px;border:1px solid var(--line-2);background:var(--card);
+  min-height:44px;transition:border-color .25s,transform .25s var(--ease),background .25s;
+}
+.chain-pills .cp:hover,.chain-pills .cp:focus-visible{transform:translateY(-2px);border-color:var(--cc);background:color-mix(in srgb,var(--cc) 16%,var(--card))}
+.chain-pills .cp .n{font-family:var(--mono);font-size:11px;color:var(--cc)}
+.chain-pills .cp .dot{width:9px;height:9px;border-radius:999px;background:var(--cc)}
+.chain-pills .arr{align-self:center;color:var(--dim);font-family:var(--mono);font-size:13px}
+
+.hero-meta{
+  margin-top:30px;padding-top:18px;border-top:1px solid var(--line);
+  display:flex;flex-wrap:wrap;gap:14px 22px;align-items:center;justify-content:space-between;
+}
+.hero-meta .who{font-family:var(--hei);font-size:14px;color:var(--fg)}
+.hero-meta .who b{color:var(--ulva-lt);font-weight:800}
+.hero-meta .who span{display:block;color:var(--muted);font-size:12.5px;font-weight:400;font-family:var(--song);margin-top:3px}
+.qr-card{
+  display:flex;align-items:center;gap:11px;background:rgba(255,255,255,.95);border-radius:12px;
+  padding:8px 12px 8px 8px;box-shadow:0 10px 30px -12px rgba(0,0,0,.6);
+}
+.qr-card img{width:58px;height:58px;border-radius:4px}
+.qr-card .qt{font-family:var(--hei);font-size:11.5px;line-height:1.45;color:#0d2b45;font-weight:700}
+.qr-card .qt span{display:block;font-weight:400;color:#3c5566;font-size:10.5px;font-family:var(--mono)}
+
+.scroll-cue{
+  position:absolute;left:50%;bottom:calc(var(--safe-b) + 14px);transform:translateX(-50%);
+  display:flex;flex-direction:column;align-items:center;gap:6px;color:var(--muted);
+  font-family:var(--mono);font-size:10.5px;letter-spacing:.18em;z-index:2;
+}
+.scroll-cue .ar{width:18px;height:28px;border:1.5px solid var(--line-2);border-radius:12px;position:relative}
+.scroll-cue .ar::after{content:'';position:absolute;left:50%;top:6px;width:3px;height:6px;border-radius:2px;background:var(--ulva-lt);transform:translateX(-50%);animation:cue 1.7s infinite var(--ease)}
+@keyframes cue{0%{opacity:0;transform:translate(-50%,0)}40%{opacity:1}100%{opacity:0;transform:translate(-50%,10px)}}
+@media (prefers-reduced-motion:reduce){.scroll-cue .ar::after{animation:none}}
+
+/* ───── 导览 / 预报链 ───── */
+#chain .abstract{
+  font-size:clamp(15px,4vw,17px);color:var(--fg-2);line-height:1.85;
+  border-left:3px solid var(--teal);padding-left:18px;margin-top:8px;
+}
+#chain .abstract b{color:var(--fg);font-weight:700}
+#chain .abstract em{font-style:normal;color:var(--ulva-lt);font-weight:700}
+.chain-flow{display:flex;flex-direction:column;gap:0;margin-top:34px}
+.chain-step{
+  display:grid;grid-template-columns:44px 1fr;gap:16px;align-items:start;
+  padding:16px 0;position:relative;
+}
+.chain-step:not(:last-child)::after{content:'';position:absolute;left:21px;top:46px;bottom:-16px;width:2px;background:linear-gradient(var(--cc),transparent)}
+.chain-step .bub{
+  width:44px;height:44px;border-radius:12px;display:grid;place-items:center;
+  background:color-mix(in srgb,var(--cc) 20%,var(--sea-2));border:1px solid var(--cc);
+  font-family:var(--hei);font-weight:800;color:var(--cc);font-size:17px;
+}
+.chain-step h3{font-size:17px;margin-bottom:3px}
+.chain-step h3 .cc{color:var(--cc)}
+.chain-step p{font-size:14px;color:var(--muted);line-height:1.6}
+
+/* ───── 卡片 / 数据 ───── */
+.panel{
+  background:var(--card);border:1px solid var(--line);border-radius:var(--radius);
+  backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);
+  box-shadow:0 1px 0 rgba(255,255,255,.04) inset, 0 24px 50px -34px rgba(0,0,0,.8);
+}
+.stat-row{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin-top:22px}
+@media (min-width:560px){.stat-row{grid-template-columns:repeat(4,1fr)}}
+.stat{
+  background:var(--card);border:1px solid var(--line);border-top:2px solid var(--cc,var(--teal));
+  border-radius:12px;padding:13px 13px 11px;text-align:left;
+}
+.stat .v{font-family:var(--hei);font-weight:800;font-size:clamp(21px,6.5vw,26px);color:var(--cc,var(--ulva-lt));line-height:1.05}
+.stat .v small{font-size:.52em;font-weight:700;margin-left:1px}
+.stat .l{font-size:11.5px;color:var(--muted);margin-top:5px;line-height:1.35;font-family:var(--hei)}
+
+/* ───── 地图通用 ───── */
+.map-stage{position:relative;width:100%;border-radius:14px;overflow:hidden;background:linear-gradient(180deg,#04203f,#021530);border:1px solid var(--line)}
+.map-stage svg.basemap{width:100%;height:auto;display:block}
+.map-stage canvas.bloom{position:absolute;inset:0;width:100%;height:100%;pointer-events:none}
+.land{fill:#0a2c2a;stroke:rgba(120,200,150,.25);stroke-width:1}
+.coast-glow{fill:none;stroke:rgba(122,216,79,.20);stroke-width:5}
+.grat{stroke:rgba(120,180,210,.10);stroke-width:.7;fill:none}
+.city-dot{fill:var(--fg)}
+.city-lbl{fill:var(--fg-2);font-family:var(--hei);font-weight:600}
+.src-dot{fill:none;stroke:var(--amber);stroke-width:1.4}
+.src-lbl{fill:var(--amber);font-family:var(--mono)}
+.drift-path{fill:none;stroke:rgba(122,216,79,.5);stroke-width:1.6;stroke-dasharray:3 5;stroke-linecap:round}
+.sea-lbl{fill:rgba(150,200,222,.5);font-family:var(--hei);font-weight:600;letter-spacing:.2em}
+.map-tag{position:absolute;left:10px;top:10px;z-index:3}
+.map-legend{position:absolute;right:9px;bottom:9px;z-index:3;display:flex;flex-direction:column;gap:3px;font-family:var(--mono);font-size:10px;color:var(--fg-2);background:rgba(3,18,42,.66);padding:6px 8px;border-radius:8px;border:1px solid var(--line)}
+.map-legend i{display:inline-block;width:9px;height:9px;border-radius:2px;margin-right:5px;vertical-align:-1px}
+
+/* ───── 时间轴 scrubber ───── */
+.scrub-wrap{margin-top:18px}
+.bubble{
+  display:inline-flex;align-items:baseline;gap:9px;flex-wrap:wrap;
+  font-family:var(--hei);margin-bottom:12px;min-height:30px;
+}
+.bubble .date{font-size:22px;font-weight:800;color:var(--fg)}
+.bubble .stage{font-size:12.5px;font-weight:700;padding:3px 10px;border-radius:999px;color:#04203f}
+.bubble .cov{font-family:var(--mono);font-size:12px;color:var(--muted)}
+.track{
+  position:relative;height:46px;display:flex;align-items:center;touch-action:pan-y;
+  user-select:none;-webkit-user-select:none;cursor:grab;
+}
+.track.grab{cursor:grabbing}
+.track .rail{position:absolute;left:0;right:0;height:6px;border-radius:6px;background:rgba(150,200,222,.14);overflow:hidden}
+.track .fill{position:absolute;left:0;height:6px;border-radius:6px;background:linear-gradient(90deg,var(--navy),var(--teal) 55%,var(--ulva))}
+.track .ticks{position:absolute;inset:0;pointer-events:none}
+.track .tk{position:absolute;top:50%;transform:translate(-50%,-50%);width:1px;height:11px;background:rgba(150,200,222,.3)}
+.track .tklbl{position:absolute;top:30px;transform:translateX(-50%);font-family:var(--mono);font-size:10px;color:var(--dim)}
+.track .thumb{
+  position:absolute;top:50%;width:26px;height:26px;border-radius:999px;
+  background:#eaf3f7;border:3px solid var(--ulva);box-shadow:0 4px 14px rgba(0,0,0,.5),0 0 0 6px rgba(79,157,58,.16);
+  transform:translate(-50%,-50%);will-change:left;
+}
+.track .thumb::after{content:'';position:absolute;left:50%;top:50%;width:9px;height:9px;border-radius:999px;background:var(--ulva);transform:translate(-50%,-50%)}
+.scrub-ctrl{display:flex;align-items:center;gap:12px;margin-top:26px}
+.btn-play{
+  display:inline-flex;align-items:center;gap:8px;font-family:var(--hei);font-weight:700;font-size:13.5px;
+  padding:9px 16px;border-radius:999px;border:1px solid var(--line-2);background:var(--card);min-height:44px;
+  transition:border-color .2s,background .2s;
+}
+.btn-play:hover{border-color:var(--ulva);background:color-mix(in srgb,var(--ulva) 14%,var(--card))}
+.btn-play .ic{width:13px;height:13px;fill:var(--ulva-lt)}
+.scrub-hint{font-family:var(--mono);font-size:11px;color:var(--dim)}
+
+/* 面积曲线 */
+.curve-wrap{margin-top:22px}
+.curve-wrap .ttl{display:flex;align-items:center;gap:8px;font-family:var(--hei);font-weight:700;font-size:13px;color:var(--fg-2);margin-bottom:8px}
+svg.curve{width:100%;height:auto;display:block;overflow:visible}
+.curve .band{opacity:.16}
+.curve .area{fill:url(#covgrad);opacity:.9}
+.curve .line{fill:none;stroke:var(--ulva-lt);stroke-width:2}
+.curve .axis{stroke:var(--line);stroke-width:1}
+.curve .axlbl{fill:var(--dim);font-family:var(--mono);font-size:9px}
+.curve .marker{stroke:#fff;stroke-width:1;stroke-dasharray:2 3}
+.curve .mdot{fill:#fff;stroke:var(--ulva);stroke-width:2}
+.curve .bandlbl{fill:var(--fg-2);font-family:var(--hei);font-weight:700;font-size:9.5px}
+
+.yearbar{display:flex;flex-wrap:wrap;gap:7px;margin-top:20px}
+.yearbar .yb{font-family:var(--mono);font-size:11.5px;color:var(--fg-2);border:1px solid var(--line);border-radius:8px;padding:6px 10px;background:var(--card);min-height:36px;display:inline-flex;align-items:center;gap:6px;transition:border-color .2s,color .2s}
+.yearbar .yb b{color:var(--ulva-lt)}
+.yearbar .yb[aria-pressed="true"]{border-color:var(--ulva);color:var(--fg);background:color-mix(in srgb,var(--ulva) 12%,var(--card))}
+
+/* ───── 机制滑块 ───── */
+.sliders{display:flex;flex-direction:column;gap:6px;margin-top:8px}
+.sld{padding:15px 16px;border-bottom:1px solid var(--line)}
+.sld:last-child{border-bottom:none}
+.sld .top{display:flex;justify-content:space-between;align-items:baseline;gap:10px;margin-bottom:11px}
+.sld .nm{font-family:var(--hei);font-weight:700;font-size:14.5px;color:var(--fg)}
+.sld .nm .corr{font-family:var(--mono);font-size:10.5px;color:var(--amber);margin-left:7px;font-weight:600}
+.sld .val{font-family:var(--mono);font-size:12.5px;color:var(--ulva-lt);font-weight:600;text-align:right}
+.sld input[type=range]{-webkit-appearance:none;appearance:none;width:100%;height:38px;background:transparent;cursor:pointer;margin:0}
+.sld input[type=range]::-webkit-slider-runnable-track{height:7px;border-radius:7px;background:linear-gradient(90deg,var(--sld-c,var(--teal)) var(--p,50%),rgba(150,200,222,.16) var(--p,50%))}
+.sld input[type=range]::-moz-range-track{height:7px;border-radius:7px;background:rgba(150,200,222,.16)}
+.sld input[type=range]::-moz-range-progress{height:7px;border-radius:7px;background:var(--sld-c,var(--teal))}
+.sld input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;appearance:none;width:24px;height:24px;margin-top:-8.5px;border-radius:999px;background:#eaf3f7;border:3px solid var(--sld-c,var(--teal));box-shadow:0 3px 10px rgba(0,0,0,.5)}
+.sld input[type=range]::-moz-range-thumb{width:22px;height:22px;border-radius:999px;background:#eaf3f7;border:3px solid var(--sld-c,var(--teal));box-shadow:0 3px 10px rgba(0,0,0,.5)}
+.sld .ends{display:flex;justify-content:space-between;font-family:var(--mono);font-size:10px;color:var(--dim);margin-top:1px}
+
+.gauge-box{margin-top:18px;padding:20px 18px;text-align:center}
+.gauge-box .glbl{font-family:var(--hei);font-weight:700;font-size:13px;color:var(--fg-2);margin-bottom:6px;display:flex;align-items:center;justify-content:center;gap:8px}
+.gauge-box .gval{font-family:var(--hei);font-weight:800;font-size:clamp(40px,13vw,58px);line-height:1;color:var(--ulva-lt);transition:color .3s}
+.gauge-box .gval small{font-size:.32em;color:var(--muted);font-weight:600;margin-left:4px}
+.gbar{height:14px;border-radius:8px;background:rgba(150,200,222,.14);overflow:hidden;margin:16px 0 8px;position:relative}
+.gbar .gf{height:100%;border-radius:8px;width:30%;transition:width .45s var(--ease),background .45s;background:linear-gradient(90deg,var(--navy),var(--teal),var(--ulva))}
+.gbar .seg{position:absolute;top:0;bottom:0;width:1px;background:rgba(3,18,42,.6)}
+.gauge-box .gtag{display:inline-block;margin-top:6px;font-family:var(--hei);font-weight:800;font-size:14px;padding:4px 14px;border-radius:999px}
+.gauge-box .gnote{font-size:12px;color:var(--muted);margin-top:12px;line-height:1.6;font-family:var(--song)}
+.btn-reset{margin-top:6px;font-family:var(--mono);font-size:11.5px;color:var(--muted);border:1px solid var(--line);border-radius:8px;padding:10px 16px;min-height:44px}
+.btn-reset:hover{color:var(--fg);border-color:var(--line-2)}
+
+/* ───── 模型流程 ───── */
+.flow{position:relative;margin-top:10px}
+svg.flowsvg{width:100%;height:auto;display:block;overflow:visible}
+.fnode{cursor:pointer}
+.fnode rect{transition:fill .2s,stroke .2s}
+.fnode text{font-family:var(--hei);pointer-events:none}
+.fnode .ft{font-weight:800}
+.fnode .fs{font-family:var(--mono)}
+.fnode.active rect{stroke-width:2.4}
+.flow-edge{fill:none;stroke:rgba(122,216,79,.4);stroke-width:1.8}
+.flow-edge.dash{stroke:rgba(46,111,168,.6);stroke-dasharray:4 3}
+.flow-detail{margin-top:16px;padding:16px 17px;min-height:104px}
+.flow-detail .fd-h{display:flex;align-items:center;gap:9px;font-family:var(--hei);font-weight:800;font-size:15.5px;margin-bottom:7px}
+.flow-detail .fd-h .pin{width:10px;height:10px;border-radius:3px}
+.flow-detail .fd-role{font-family:var(--mono);font-size:11px;color:var(--amber);margin-left:auto;font-weight:600}
+.flow-detail p{font-size:13.5px;color:var(--fg-2);line-height:1.66}
+.flow-hint{font-family:var(--mono);font-size:11px;color:var(--dim);margin-top:10px;text-align:center}
+
+/* 温度阈值条 */
+.temp-box{margin-top:24px;padding:18px 16px}
+.temp-box .th{font-family:var(--hei);font-weight:700;font-size:13.5px;color:var(--fg-2);margin-bottom:14px;display:flex;align-items:center;gap:8px}
+.tempbar{position:relative;height:34px;border-radius:9px;overflow:hidden;border:1px solid var(--line);
+  background:linear-gradient(90deg,#2e6fa8 0%,#2e6fa8 30%,#4F9D3A 30%,#4F9D3A 55%,#9ec34a 55%,#9ec34a 80%,#E29A2B 80%,#C0392B 100%)}
+.tempbar .zlbl{position:absolute;top:50%;transform:translate(-50%,-50%);font-family:var(--mono);font-size:9.5px;color:rgba(3,18,42,.8);font-weight:700;white-space:nowrap;pointer-events:none}
+.temp-range{position:relative;margin-top:8px}
+.temp-range input[type=range]{-webkit-appearance:none;appearance:none;width:100%;height:38px;background:transparent;cursor:pointer;margin:0}
+.temp-range input[type=range]::-webkit-slider-runnable-track{height:7px;border-radius:7px;background:linear-gradient(90deg,var(--sld-c,var(--ulva)) var(--p,42%),rgba(150,200,222,.16) var(--p,42%))}
+.temp-range input[type=range]::-moz-range-track{height:7px;border-radius:7px;background:rgba(150,200,222,.16)}
+.temp-range input[type=range]::-moz-range-progress{height:7px;border-radius:7px;background:var(--sld-c,var(--ulva))}
+.temp-range input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;appearance:none;width:26px;height:26px;margin-top:-9.5px;border-radius:999px;background:#eaf3f7;border:3px solid var(--sld-c,var(--ulva));box-shadow:0 3px 10px rgba(0,0,0,.5)}
+.temp-range input[type=range]::-moz-range-thumb{width:24px;height:24px;border-radius:999px;background:#eaf3f7;border:3px solid var(--sld-c,var(--ulva));box-shadow:0 3px 10px rgba(0,0,0,.5)}
+.temp-read{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-top:14px;flex-wrap:wrap}
+.temp-read .tv{font-family:var(--hei);font-weight:800;font-size:30px;color:var(--fg)}
+.temp-read .tv small{font-size:.42em;color:var(--muted);margin-left:2px}
+.temp-read .tstate{font-family:var(--hei);font-weight:800;font-size:14.5px;padding:6px 15px;border-radius:999px}
+.temp-marks{display:flex;justify-content:space-between;font-family:var(--mono);font-size:10px;color:var(--dim);margin-top:4px}
+
+/* ───── 风险 ───── */
+.risk-grid{margin-top:6px}
+.risk-stage{position:relative}
+.risk-seg{cursor:pointer}
+.risk-seg circle.halo{transition:r .2s,opacity .2s}
+.risk-seg.active circle.halo{opacity:1}
+.risk-seg text{font-family:var(--hei);font-weight:700;pointer-events:none}
+.risk-detail{margin-top:16px;padding:17px 18px}
+.risk-detail .rd-top{display:flex;align-items:center;gap:11px;margin-bottom:14px;flex-wrap:wrap}
+.risk-detail .rd-name{font-family:var(--hei);font-weight:800;font-size:18px}
+.risk-detail .rd-lv{font-family:var(--hei);font-weight:800;font-size:13px;padding:4px 13px;border-radius:999px;color:#04203f}
+.risk-detail .rd-idx{margin-left:auto;font-family:var(--mono);font-weight:700;font-size:13px;color:var(--fg-2)}
+.risk-detail .rd-idx b{font-size:23px;color:var(--fg)}
+.compo{display:flex;flex-direction:column;gap:13px}
+.compo .crow .cl{display:flex;justify-content:space-between;font-size:12.5px;margin-bottom:5px;font-family:var(--hei);font-weight:600;color:var(--fg-2)}
+.compo .cl .cv{font-family:var(--mono);color:var(--fg)}
+.compo .cbar{height:9px;border-radius:6px;background:rgba(150,200,222,.14);overflow:hidden}
+.compo .cbar i{display:block;height:100%;border-radius:6px;transition:width .5s var(--ease)}
+.risk-detail .rd-note{font-size:12.5px;color:var(--muted);margin-top:14px;line-height:1.6;border-top:1px solid var(--line);padding-top:12px}
+.risk-scale{display:grid;grid-template-columns:repeat(4,1fr);gap:7px;margin-top:18px}
+.risk-scale .rs{padding:9px 8px;border-radius:9px;text-align:center;border:1px solid var(--line)}
+.risk-scale .rs .lv{font-family:var(--hei);font-weight:800;font-size:13px;color:#04203f;border-radius:6px;padding:1px 0;margin-bottom:5px}
+.risk-scale .rs .rg{font-family:var(--mono);font-size:10px;color:var(--muted)}
+.risk-segs-list{display:flex;flex-wrap:wrap;gap:6px;margin-top:14px}
+.risk-segs-list button{font-family:var(--hei);font-weight:600;font-size:12px;border:1px solid var(--line);border-radius:8px;padding:8px 12px;min-height:44px;color:var(--fg-2);background:var(--card)}
+.risk-segs-list button[aria-pressed="true"]{color:#04203f;border-color:transparent}
+
+/* ───── 结论 ───── */
+#conclusion .concl{
+  padding:26px 22px;border-radius:var(--radius);
+  background:linear-gradient(125deg,rgba(13,74,122,.55),rgba(31,138,112,.4) 70%,rgba(79,157,58,.32));
+  border:1px solid var(--line-2);position:relative;overflow:hidden;
+}
+#conclusion .concl::before{content:'';position:absolute;right:-40px;top:-40px;width:180px;height:180px;border-radius:50%;background:radial-gradient(circle,rgba(122,216,79,.22),transparent 70%)}
+#conclusion .tag{font-family:var(--hei);font-weight:800;font-size:13px;letter-spacing:.1em;color:var(--ulva-lt);margin-bottom:12px}
+#conclusion .ctext{font-size:clamp(16px,4.4vw,19px);line-height:1.78;font-family:var(--song);font-weight:600;color:var(--fg)}
+#conclusion .ctext b{color:var(--ulva-lt);font-weight:800}
+.loop-row{display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-top:20px;font-family:var(--mono);font-size:12px;color:var(--fg-2)}
+.loop-row .lp{padding:5px 11px;border-radius:999px;border:1px solid var(--cc);color:var(--cc);font-weight:600}
+.loop-row .ar{color:var(--dim)}
+
+/* ───── 文献 / 页脚 ───── */
+.refs{margin-top:30px}
+.refs h3{font-size:16px;margin-bottom:4px;display:flex;align-items:center;gap:9px}
+.refs .rsub{font-family:var(--mono);font-size:11px;color:var(--dim);margin-bottom:14px}
+.refs ol{list-style:none;counter-reset:r}
+.refs li{counter-increment:r;position:relative;padding:11px 0 11px 30px;border-top:1px solid var(--line);font-size:13px;color:var(--fg-2);line-height:1.55}
+.refs li::before{content:"["counter(r)"]";position:absolute;left:0;top:11px;font-family:var(--mono);font-weight:700;color:#5cc4a6;font-size:12px}
+.refs li .role{font-family:var(--mono);font-size:10.5px;color:var(--ulva-lt);font-weight:600;margin-right:6px}
+.note-box{margin-top:24px;padding:15px 17px;border-radius:12px;border:1px dashed var(--line-2);background:rgba(226,154,43,.06)}
+.note-box .nh{font-family:var(--hei);font-weight:800;font-size:12.5px;color:var(--amber);margin-bottom:7px;display:flex;align-items:center;gap:7px}
+.note-box p{font-size:12px;color:var(--muted);line-height:1.7}
+.note-box b{color:var(--fg-2)}
+.gt-foot{padding:34px var(--pad) calc(var(--safe-b) + 40px);text-align:center;border-top:1px solid var(--line);margin-top:40px}
+.gt-foot .sig{font-family:var(--hei);font-weight:800;font-size:15px;color:var(--fg)}
+.gt-foot .sig .grad{background:linear-gradient(95deg,#7ad84f,#1f8a70);-webkit-background-clip:text;background-clip:text;color:transparent}
+.gt-foot .meta{font-family:var(--mono);font-size:11.5px;color:var(--dim);margin-top:8px;line-height:1.7}
+.gt-foot .back{display:inline-flex;align-items:center;gap:7px;margin-top:18px;font-family:var(--hei);font-weight:700;font-size:13.5px;color:var(--fg-2);border:1px solid var(--line-2);border-radius:999px;padding:10px 20px;min-height:44px;transition:border-color .2s,color .2s}
+.gt-foot .back:hover{color:var(--ulva-lt);border-color:var(--ulva)}
+
+/* 滚动顶部 */
+.totop{position:fixed;right:16px;bottom:calc(var(--safe-b) + 16px);z-index:40;width:46px;height:46px;border-radius:999px;display:grid;place-items:center;background:var(--glass-2);border:1px solid var(--line-2);backdrop-filter:blur(8px);opacity:0;pointer-events:none;transform:translateY(10px);transition:opacity .3s,transform .3s}
+.totop.show{opacity:1;pointer-events:auto;transform:none}
+.totop svg{width:18px;height:18px;stroke:var(--fg-2);fill:none;stroke-width:2}
+
+.fineprint{font-family:var(--mono);font-size:11px;color:var(--muted);margin-top:14px;display:flex;align-items:center;gap:7px;flex-wrap:wrap}
+
+/* ── 评审修复：触控 / 对齐 / 质感 / 可达性 ── */
+.map-stage canvas.bloom{z-index:1}
+.map-stage::after{content:'';position:absolute;inset:0;pointer-events:none;z-index:2;opacity:.45;mix-blend-mode:screen;
+  background-image:radial-gradient(rgba(150,205,185,.5) .5px,transparent 1.3px);background-size:6px 6px}
+.temp-marks{position:relative;height:15px;margin-top:5px}
+.temp-marks span{position:absolute;font-family:var(--mono);font-size:10px;color:var(--muted);white-space:nowrap}
+.node-list{display:flex;flex-wrap:wrap;gap:6px;margin-top:12px}
+.node-list button{font-family:var(--hei);font-weight:600;font-size:12px;border:1px solid var(--line);border-radius:8px;
+  padding:8px 11px;min-height:44px;color:var(--fg-2);background:var(--card);display:inline-flex;align-items:center;gap:6px}
+.node-list button .nd{width:8px;height:8px;border-radius:3px;flex:0 0 auto}
+.node-list button[aria-pressed="true"]{color:var(--fg);border-color:var(--line-2);background:color-mix(in srgb,var(--sea-3) 75%,transparent)}
+.contrib{margin-top:18px;text-align:left}
+.contrib .ch{font-family:var(--mono);font-size:11px;color:var(--muted);margin-bottom:7px;display:flex;justify-content:space-between;gap:10px;align-items:center}
+.contrib .ch b{color:var(--ulva-lt);font-weight:600}
+.contrib .cbar{display:flex;height:14px;border-radius:7px;overflow:hidden;background:rgba(150,200,222,.12)}
+.contrib .cbar i{height:100%;transition:width .45s var(--ease);min-width:0}
+.contrib .leg{display:flex;flex-wrap:wrap;gap:9px 12px;margin-top:10px;font-family:var(--mono);font-size:10.5px;color:var(--muted)}
+.contrib .leg span{display:inline-flex;align-items:center;gap:5px}
+.contrib .leg i{width:9px;height:9px;border-radius:2px}
+.flow-detail{transition:opacity .18s var(--ease)}
+.flow-detail.swap{opacity:0}
+@media (prefers-reduced-motion:no-preference){
+  .risk-seg.active circle.halo{animation:halo 1.9s ease-in-out infinite}
+  @keyframes halo{0%,100%{opacity:.16}50%{opacity:.42}}
+}
+@media (prefers-reduced-motion:reduce){
+  *,*::before,*::after{animation-duration:.001ms!important;animation-iteration-count:1!important;transition-duration:.001ms!important;scroll-behavior:auto!important}
+}
+</style>
+</head>
+<body>
+
+<canvas id="ocean-bg" aria-hidden="true"></canvas>
+
+<header class="gt-top" id="gtTop">
+  <a class="home" href="index.html"><span class="bk">←</span><span>BeforeUgone</span></a>
+  <span class="ttl" id="topTtl">黄海浒苔绿潮预报链</span>
+  <nav class="chain-dots" id="chainDots" aria-label="预报链导航"></nav>
+</header>
+
+<!-- ============ HERO ============ -->
+<section class="gt-hero" id="top">
+  <div class="h-inner">
+    <div class="kicker">
+      <span class="tag">课程作业 · 期末</span><span>海洋灾害的成因与数值预报</span><span>· 交互演示</span>
+    </div>
+    <h1>黄海<span class="grad">浒苔绿潮</span><br>预报链</h1>
+    <p class="sub">从遥感监测 → 年际机制 → 物理–生态耦合模型 → 动态风险评估</p>
+    <p class="lead">把静态墙报里「监测→机制→模型→风险」的证据链，做成<em>可拖动时间轴、可调参数</em>的单页——看绿潮在黄海上<em>长出来、又漂走</em>。</p>
+
+    <div class="chain-pills" id="heroPills"></div>
+
+    <div class="hero-meta">
+      <div class="who">汇报人：<b>黎达宏</b>
+        <span>深圳大学 · 生命与海洋科学学院 · 海洋科学　|　2026 年 6 月</span>
+      </div>
+      <a class="qr-card" href="#top" aria-label="本页二维码">
+        <img src="assets/green-tide-qr.svg" alt="扫码在手机打开本演示页">
+        <div class="qt">扫码看演示<span>手机 · 竖屏</span></div>
+      </a>
+    </div>
+  </div>
+  <div class="scroll-cue" aria-hidden="true"><span>SCROLL</span><span class="ar"></span></div>
+</section>
+
+<!-- ============ 导览 / 预报链 ============ -->
+<section class="module" id="chain">
+  <div class="wrap reveal">
+    <span class="eyebrow"><span class="ix">00</span> 一条完整的故事</span>
+    <h2>四环相扣，从「看得见」走向「可预判」</h2>
+    <p class="abstract">
+      黄海浒苔绿潮是我国近海规模最大的绿潮灾害。本演示以 <b>「监测—机制—模型—风险」</b> 证据链组织：卫星遥感识别绿潮的面积、位置与初始场，揭示其 <em>5 月中下旬暴发、6 月中旬至 7 月上旬达峰、平均持续约 84 d</em> 的季节节律；进而从 ENSO、苏北大风、降水与沿海经济活动解释最大覆盖面积的年际「大小年」；在 <b>LTRANS-GT</b> 耦合模型中，风流为输运因子、温光营养盐为生态因子，共同控制生长与消亡；最终把漂移路径、生物量与致险危险性、承灾体脆弱性耦合为 <b>动态风险等级</b>，服务近岸防灾减灾。
+    </p>
+    <div class="chain-flow" id="chainFlow"></div>
+  </div>
+</section>
+
+<!-- ============ 模块 1 · 遥感监测 ============ -->
+<section class="module" id="m1" style="--cc:#37b6ce">
+  <div class="wrap">
+    <div class="reveal">
+      <span class="eyebrow"><span class="ix">01</span> 遥感监测 · 时空演变</span>
+      <h2>拖动时间轴，看绿潮长出来又漂走</h2>
+      <p class="dek">2010—2019 年黄海卫星遥感揭示稳定的季节节律：绿潮自苏北以东海域生长，向东北漂移，达峰后消衰。底图、斑块与轨迹 <span class="shi"></span> 为演示，真实节律与数值见下方卡片。</p>
+    </div>
+
+    <div class="map-stage reveal" id="m1Map" style="margin-top:22px">
+      <div class="map-tag"><span class="shi">示意底图 · Ulva prolifera</span></div>
+    </div>
+
+    <div class="scrub-wrap reveal panel" style="padding:16px 16px 18px;margin-top:16px;border-radius:14px">
+      <div class="bubble">
+        <span class="date mono" id="m1Date">5月1日</span>
+        <span class="stage" id="m1Stage">监测期</span>
+        <span class="cov" id="m1Cov">相对覆盖 0% · 示意</span>
+      </div>
+      <div class="track" id="m1Track" role="slider" aria-label="时间轴 5月至8月" aria-valuemin="0" aria-valuemax="105" aria-valuenow="0" tabindex="0">
+        <div class="rail"><div class="fill" id="m1Fill"></div></div>
+        <div class="ticks" id="m1Ticks"></div>
+        <div class="thumb" id="m1Thumb" style="left:0%"></div>
+      </div>
+      <div class="scrub-ctrl">
+        <button class="btn-play" id="m1Play"><svg class="ic" viewBox="0 0 24 24" id="m1PlayIc"><path d="M8 5v14l11-7z"/></svg><span id="m1PlayTx">播放季节</span></button>
+        <span class="scrub-hint">← 拖动滑块 / 按播放 →</span>
+      </div>
+    </div>
+
+    <div class="curve-wrap reveal">
+      <div class="ttl">覆盖面积 · 单峰季节曲线 <span class="shi">相对值</span></div>
+      <svg class="curve" id="m1Curve" viewBox="0 0 360 150" preserveAspectRatio="none" aria-label="覆盖面积随时间的单峰曲线（示意）"></svg>
+    </div>
+
+    <div class="stat-row reveal" style="--cc:#37b6ce">
+      <div class="stat"><div class="v">84<small>d</small></div><div class="l">灾害过程平均持续</div></div>
+      <div class="stat"><div class="v">22.6<small>%</small></div><div class="l">峰前最大日增长率</div></div>
+      <div class="stat"><div class="v">12.3<small>%</small></div><div class="l">峰后最大日衰减率</div></div>
+      <div class="stat"><div class="v">4<small>类</small></div><div class="l">主要漂移路径</div></div>
+    </div>
+
+    <div class="yearbar reveal" id="m1Years" role="group" aria-label="年际差异（实测）"></div>
+    <p class="fineprint reveal"><span class="shi"></span> 漂移路径四类、源地位于江苏以东，盛期约 48 d；2014 年覆盖面积达历史极大值。数据：何恩业等, 2021。</p>
+  </div>
+</section>
+
+<!-- ============ 模块 2 · 年际机制 ============ -->
+<section class="module" id="m2" style="--cc:#2e6fa8">
+  <div class="wrap">
+    <div class="reveal">
+      <span class="eyebrow"><span class="ix">02</span> 年际机制 · 复合驱动</span>
+      <h2>滑动四个驱动因子，看「大小年」如何形成</h2>
+      <p class="dek">最大覆盖面积的年际波动，是气候尺度 ENSO、季节尺度天气系统、年际尺度陆源活动的复合结果。下面是一个 <span class="shi">示意权重模型</span>，权重大小贴合文献相关性，并非真实预报。</p>
+    </div>
+
+    <div class="panel reveal" style="margin-top:22px;overflow:hidden">
+      <div class="sliders" id="m2Sliders"></div>
+    </div>
+
+    <div class="panel reveal gauge-box" style="margin-top:16px">
+      <div class="glbl">预测最大覆盖面积 · 相对指数 <span class="shi"></span></div>
+      <div class="gval" id="m2Gval">52<small>/100</small></div>
+      <div class="gbar"><div class="gf" id="m2Gbar"></div><div class="seg" style="left:33%"></div><div class="seg" style="left:66%"></div></div>
+      <span class="gtag" id="m2Gtag">常年</span>
+      <p class="gnote" id="m2Gnote"></p>
+      <div class="contrib" id="m2Contrib"></div>
+      <button class="btn-reset" id="m2Reset">复位到常年</button>
+    </div>
+
+    <div class="stat-row reveal" style="--cc:#2e6fa8">
+      <div class="stat"><div class="v">0.75</div><div class="l">苏北 6 级大风持续 ↔ 覆盖面积 r</div></div>
+      <div class="stat"><div class="v">0.62</div><div class="l">分布面积 ↔ 覆盖面积 r</div></div>
+      <div class="stat"><div class="v">ENSO</div><div class="l">厄尔尼诺次年通常偏多</div></div>
+      <div class="stat"><div class="v">营养盐</div><div class="l">主导生长期年际差异</div></div>
+    </div>
+    <p class="fineprint reveal"><span class="shi"></span> 偏北风持续偏多利于浒苔滞留苏北适宜海域；降水与覆盖面积中等正相关；机制分析基于 2008—2022 年资料。数据：徐淑雯, 2024。</p>
+  </div>
+</section>
+
+<!-- ============ 模块 3 · 耦合模型 ============ -->
+<section class="module" id="m3" style="--cc:#4F9D3A">
+  <div class="wrap">
+    <div class="reveal">
+      <span class="eyebrow"><span class="ix">03</span> 物理–生态耦合模型</span>
+      <h2>点开 LTRANS-GT 的每个环节</h2>
+      <p class="dek">风流决定藻体「去哪里」，温光营养盐决定它「长多少、活多久」——二者空间耦合，是绿潮规模年际差异的物理–生态根源。点击节点查看说明。</p>
+    </div>
+
+    <div class="panel reveal flow" style="margin-top:22px;padding:18px 14px">
+      <svg class="flowsvg" id="m3Flow" viewBox="0 0 360 320" aria-label="LTRANS-GT 物理–生态耦合框架，可点击节点"></svg>
+    </div>
+    <div class="node-list reveal" id="m3List" role="group" aria-label="模型环节快捷选择"></div>
+    <div class="panel reveal flow-detail" id="m3Detail"></div>
+    <p class="flow-hint"><span aria-hidden="true">▲</span> 点击节点或下方按钮切换说明</p>
+
+    <div class="panel reveal temp-box" style="margin-top:22px">
+      <div class="th">温度阈值 · 拖动看生长/消亡 <span class="shi"></span></div>
+      <div class="tempbar" id="m3Tempbar"></div>
+      <div class="temp-marks" id="m3Marks"></div>
+      <div class="temp-range"><input type="range" id="m3Temp" min="100" max="300" value="185" step="1" aria-label="海表温度 ℃"></div>
+      <div class="temp-read">
+        <div class="tv mono" id="m3TempV">18.5<small>℃</small></div>
+        <div class="tstate" id="m3TempState">适宜生长</div>
+      </div>
+    </div>
+
+    <div class="stat-row reveal" style="--cc:#4F9D3A">
+      <div class="stat"><div class="v">16–21<small>℃</small></div><div class="l">生长适宜温度</div></div>
+      <div class="stat"><div class="v">&gt;26<small>℃</small></div><div class="l">促进消亡阈值</div></div>
+      <div class="stat"><div class="v">62–94<small>d</small></div><div class="l">模拟过程历时</div></div>
+      <div class="stat"><div class="v">营养盐</div><div class="l">生长期年际主控</div></div>
+    </div>
+    <p class="fineprint reveal"><span class="shi"></span> 速度场/温度场来自 HYCOM·FVCOM·ROMS，模型须与卫星遥感迭代验证。数据：王圣 2022 · 朱国平 2020。</p>
+  </div>
+</section>
+
+<!-- ============ 模块 4 · 动态风险 ============ -->
+<section class="module" id="m4" style="--cc:#E29A2B">
+  <div class="wrap">
+    <div class="reveal">
+      <span class="eyebrow"><span class="ix">04</span> 从预报到动态风险评估</span>
+      <h2>点亮岸段，看「致险 × 脆弱」如何定级</h2>
+      <p class="dek">风险不只取决于浒苔面积，更取决于暴露程度与脆弱性——<b>距离相近，风险未必相同</b>。点击岸段看风险指数（0–10）与构成。<span class="shi"></span> 指数为演示，非真实评估。</p>
+    </div>
+
+    <div class="map-stage risk-stage reveal" id="m4Map" style="margin-top:22px">
+      <div class="map-tag"><span class="shi">示意风险图 · 致险×脆弱</span></div>
+    </div>
+    <div class="risk-segs-list reveal" id="m4List" role="group" aria-label="岸段选择"></div>
+
+    <div class="panel reveal risk-detail" id="m4Detail"></div>
+
+    <div class="risk-scale reveal" id="m4Scale"></div>
+
+    <div class="stat-row reveal" style="--cc:#E29A2B">
+      <div class="stat"><div class="v">6+14</div><div class="l">一级 + 二级指标</div></div>
+      <div class="stat"><div class="v">4<small>级</small></div><div class="l">动态风险等级</div></div>
+      <div class="stat"><div class="v" style="font-size:18px;line-height:1.2">致险<br>×脆弱</div><div class="l">风险构成</div></div>
+      <div class="stat"><div class="v">动态</div><div class="l">随漂移持续变化</div></div>
+    </div>
+    <p class="fineprint reveal"><span class="shi"></span> 以 2021 年 6 月上旬遥感监测为初始场预测漂移，再与承灾体空间叠加。数据：高硕等, 2022。</p>
+  </div>
+</section>
+
+<!-- ============ 结论 ============ -->
+<section class="module" id="conclusion">
+  <div class="wrap reveal">
+    <div class="concl">
+      <div class="tag">结论 · 与启示</div>
+      <p class="ctext">遥感<b>监测</b>给出绿潮初始场，多尺度<b>机制</b>解释其年际与漂移差异，物理–生态<b>耦合模型</b>把静态监测转化为路径、面积、生物量与等级预报，动态<b>风险评估</b>再将其落到近岸处置优先级——四环相扣，使浒苔绿潮从「看得见」走向「<b>可预判、可决策</b>」。</p>
+      <div class="loop-row">
+        <span class="lp" style="--cc:#37b6ce">监测</span><span class="ar">→</span>
+        <span class="lp" style="--cc:#2e6fa8">机制</span><span class="ar">→</span>
+        <span class="lp" style="--cc:#4F9D3A">模型</span><span class="ar">→</span>
+        <span class="lp" style="--cc:#E29A2B">风险</span><span class="ar">↺</span>
+        <span class="lp" style="--cc:#7ad84f">决策</span>
+      </div>
+    </div>
+
+    <div class="refs">
+      <h3>参考文献 <span style="font-family:var(--mono);font-size:11px;font-weight:400;color:var(--dim)">References</span></h3>
+      <div class="rsub">中文核心 / 2020 年后，覆盖 监测—机制—模型—风险 证据链</div>
+      <ol>
+        <li><span class="role">[监测·主文献]</span>何恩业, 季轩梁, 黄洪辉, 等. 近 10 a 黄海浒苔绿潮时空分布特征分析[J]. 海洋预报, 2021, 38(6): 1-11.</li>
+        <li><span class="role">[年际机制·主文献]</span>徐淑雯, 徐丽丽, 何佩东, 等. 自然过程和陆源人类活动对黄海浒苔绿潮年变化的影响分析及机制研究[J]. 海洋预报, 2024, 41(4): 88-99.</li>
+        <li><span class="role">[生消机制·耦合模型]</span>王圣, 赵亮, 张海彦, 等. 黄海绿潮生消过程及其主导因素[J]. 海洋与湖沼, 2022, 53(6): 1338-1348.</li>
+        <li><span class="role">[动态风险评估]</span>高硕, 靳熙芳, 张盼盼, 等. 基于生长漂移预测模型的浒苔灾害风险动态评估方法研究[J]. 海洋技术学报, 2022, 41(3): 75-82.</li>
+        <li><span class="role">[数值模型·综述支撑]</span>朱国平, 周梦潇. 海洋数值模型发展及其在海洋生物扩散模拟研究中的应用进展[J]. 海洋渔业, 2020, 42(2): 245-256.</li>
+      </ol>
+    </div>
+
+    <div class="note-box">
+      <div class="nh"><span aria-hidden="true">⚑</span> 数据与红线说明</div>
+      <p><b>真实数值</b>（84 d、盛期 48 d、22.6%、12.3%、r≈0.75、r≈0.62、16–21℃、&gt;26℃、62–94 d、6+14 指标、四级风险标尺等）均引自上述墙报与文献。<br><b>合成 / 示意</b>：黄海底图、绿潮斑块与漂移轨迹、面积单峰曲线、参数→覆盖面积的响应、岸段风险指数（0–10）等标注「<span class="shi"></span>」者均为交互演示，用于呈现机制与趋势，<b>不代表精确观测或预报结果，不杜撰精确数据 / DOI</b>。浒苔学名 <i>Ulva prolifera</i>。</p>
+    </div>
+  </div>
+
+  <footer class="gt-foot">
+    <div class="sig">Before<span class="grad">U</span>gone · 先做出来。</div>
+    <div class="meta">黄海浒苔绿潮预报链 · 交互演示<br>课程作业 · 海洋灾害的成因与数值预报 · 2026</div>
+    <a class="back" href="index.html"><span>←</span> 回到 BeforeUgone 主页</a>
+  </footer>
+</section>
+
+<button class="totop" id="toTop" aria-label="回到顶部"><svg viewBox="0 0 24 24"><path d="M12 19V5M6 11l6-6 6 6"/></svg></button>
+
+<script>
+"use strict";
+(function(){
+  const RM = window.matchMedia && matchMedia('(prefers-reduced-motion:reduce)').matches;
+  const $ = (s,r)=> (r||document).querySelector(s);
+  const NS='http://www.w3.org/2000/svg';
+  function el(tag,attrs,parent){const e=document.createElementNS(NS,tag);if(attrs)for(const k in attrs)e.setAttribute(k,attrs[k]);if(parent)parent.appendChild(e);return e;}
+  const clamp=(v,a,b)=>v<a?a:v>b?b:v;
+  const lerp=(a,b,t)=>a+(b-a)*t;
+  const smooth=(e0,e1,x)=>{const t=clamp((x-e0)/(e1-e0),0,1);return t*t*(3-2*t);};
+
+  /* ===== 链路配色 ===== */
+  const CHAIN=[
+    {k:'m1',n:'01',t:'遥感监测',d:'卫星识别面积、位置与初始场，给出绿潮的暴发源地与漂移走向。',c:'#37b6ce'},
+    {k:'m2',n:'02',t:'年际机制',d:'ENSO、苏北大风、降水与陆源活动复合驱动「大小年」波动。',c:'#2e6fa8'},
+    {k:'m3',n:'03',t:'耦合模型',d:'LTRANS-GT：风流输运 + 温光营养盐生态，预报路径·面积·生物量。',c:'#4F9D3A'},
+    {k:'m4',n:'04',t:'动态风险',d:'致险危险性 × 承灾体脆弱性，落到四级动态风险与处置优先级。',c:'#E29A2B'}
+  ];
+
+  /* ===== 地理投影（真实经纬度 → SVG，bbox 119–123.5E / 32–37.8N）===== */
+  const W=357,H=560, WEST=119,NORTH=37.8, FX=79.20, FY=96.55;
+  const px=lon=>(lon-WEST)*FX, py=lat=>(NORTH-lat)*FY;
+
+  const CITIES=[
+    {nm:'青岛',lon:120.38,lat:36.07,dy:-7},
+    {nm:'连云港',lon:119.22,lat:34.60,dx:2,dy:4},
+    {nm:'盐城',lon:120.16,lat:33.35,dx:2,dy:4},
+    {nm:'日照',lon:119.53,lat:35.42,dx:2,dy:-6},
+    {nm:'烟台',lon:121.45,lat:37.46,dy:-7},
+    {nm:'威海',lon:122.12,lat:37.51,dx:4,dy:8}
+  ];
+  const SRC=[
+    {id:'A',lon:120.85,lat:33.85},{id:'B',lon:121.35,lat:33.30},
+    {id:'C',lon:121.80,lat:32.85},{id:'D',lon:121.10,lat:34.10}
+  ];
+  // 海岸线锚点（由真实沿海城市坐标连出，示意），自南向北再绕半岛
+  const COAST=[
+    [120.55,33.10],[120.10,33.95],[119.45,34.55],[119.62,34.92],[119.68,35.45],
+    [120.05,35.78],[120.32,36.05],[120.55,36.25],[121.70,36.45],[122.72,37.36],
+    [122.10,37.52],[121.40,37.50],[120.30,37.65]
+  ];
+  // 漂移主轴（源区→青岛→半岛前缘）
+  const DRIFT=[[121.3,33.2],[121.0,34.1],[120.7,35.0],[120.4,35.8],[120.35,36.05],[121.2,36.7],[122.2,37.2]];
+
+  function catmull(pts){ // 经过点的平滑路径（仅海岸用）
+    const p=pts.map(c=>[px(c[0]),py(c[1])]);
+    let d='M'+p[0][0].toFixed(1)+','+p[0][1].toFixed(1);
+    for(let i=0;i<p.length-1;i++){
+      const p0=p[i-1]||p[i],p1=p[i],p2=p[i+1],p3=p[i+2]||p2;
+      const c1x=p1[0]+(p2[0]-p0[0])/6,c1y=p1[1]+(p2[1]-p0[1])/6;
+      const c2x=p2[0]-(p3[0]-p1[0])/6,c2y=p2[1]-(p3[1]-p1[1])/6;
+      d+='C'+c1x.toFixed(1)+','+c1y.toFixed(1)+' '+c2x.toFixed(1)+','+c2y.toFixed(1)+' '+p2[0].toFixed(1)+','+p2[1].toFixed(1);
+    }
+    return d;
+  }
+  function driftD(){const p=DRIFT.map(c=>[px(c[0]),py(c[1])]);let d='M'+p[0][0].toFixed(1)+','+p[0][1].toFixed(1);for(let i=1;i<p.length;i++)d+='L'+p[i][0].toFixed(1)+','+p[i][1].toFixed(1);return d;}
+  function pointOnDrift(u){const p=DRIFT.map(c=>[px(c[0]),py(c[1])]);u=clamp(u,0,1);const seg=u*(p.length-1);const i=Math.min(Math.floor(seg),p.length-2);const f=seg-i;return[lerp(p[i][0],p[i+1][0],f),lerp(p[i][1],p[i+1][1],f)];}
+
+  // 基础海图（land + 海岸 + 经纬网 + 城市 + 源区 + 漂移轴）
+  function buildBasemap(host,opts){
+    opts=opts||{};
+    const svg=el('svg',{class:'basemap',viewBox:'0 0 '+W+' '+H,preserveAspectRatio:'xMidYMid meet'},host);
+    // 经纬网
+    const g=el('g',{class:'grat'},svg);
+    for(let lon=119;lon<=123;lon++){const x=px(lon);el('line',{x1:x,y1:0,x2:x,y2:H},g);}
+    for(let lat=33;lat<=37;lat++){const y=py(lat);el('line',{x1:0,y1:y,x2:W,y2:y},g);}
+    // 陆地多边形：海岸 + 地图角点闭合
+    const coastD=catmull(COAST);
+    const land=coastD+ 'L'+px(120.30).toFixed(1)+','+(0).toFixed(1)+' L0,0 L0,'+H+' L'+px(120.55).toFixed(1)+','+py(33.10).toFixed(1)+' Z';
+    el('path',{class:'coast-glow',d:coastD},svg);
+    el('path',{class:'land',d:land},svg);
+    // 海域标注
+    el('text',{class:'sea-lbl',x:px(122.4),y:py(35.0),'font-size':14,'text-anchor':'middle'},svg).textContent='黄 海';
+    // 漂移主轴
+    if(opts.drift!==false){
+      const dp=el('path',{class:'drift-path',d:driftD()},svg);
+      // 箭头
+      const tip=pointOnDrift(0.96),pre=pointOnDrift(0.9);
+      const ang=Math.atan2(tip[1]-pre[1],tip[0]-pre[0]);
+      el('path',{d:'M'+tip[0]+','+tip[1]+' L'+(tip[0]-7*Math.cos(ang-0.5))+','+(tip[1]-7*Math.sin(ang-0.5))+' L'+(tip[0]-7*Math.cos(ang+0.5))+','+(tip[1]-7*Math.sin(ang+0.5))+' Z',fill:'rgba(122,216,79,.6)'},svg);
+      el('text',{class:'src-lbl',x:tip[0]+4,y:tip[1]-4,'font-size':9}, svg).textContent='漂移 NE';
+    }
+    // 源区 A–D
+    if(opts.src!==false){
+      SRC.forEach(s=>{
+        el('circle',{class:'src-dot',cx:px(s.lon),cy:py(s.lat),r:6},svg);
+        el('circle',{cx:px(s.lon),cy:py(s.lat),r:1.6,fill:'#E29A2B'},svg);
+        el('text',{class:'src-lbl',x:px(s.lon)+9,y:py(s.lat)+3,'font-size':8.5},svg).textContent=s.id;
+      });
+      el('text',{class:'src-lbl',x:px(121.3),y:py(32.55),'font-size':8.5,'text-anchor':'middle'},svg).textContent='源区·江苏以东';
+    }
+    // 城市
+    if(opts.cities!==false){
+      CITIES.forEach(c=>{
+        const x=px(c.lon),y=py(c.lat);
+        el('circle',{class:'city-dot',cx:x,cy:y,r:2.4},svg);
+        el('circle',{cx:x,cy:y,r:5,fill:'none',stroke:'rgba(234,243,247,.4)','stroke-width':.8},svg);
+        const t=el('text',{class:'city-lbl',x:x+(c.dx||7),y:y+(c.dy||3),'font-size':10.5},svg);
+        t.textContent=c.nm;
+        if((c.dx||7)<0)t.setAttribute('text-anchor','end');
+      });
+    }
+    return svg;
+  }
+
+  /* ============================================================
+     模块 0：链路导览 / Hero pills / 顶栏点
+     ============================================================ */
+  function buildChain(){
+    const pills=$('#heroPills');
+    CHAIN.forEach((c,i)=>{
+      const a=document.createElement('a');a.className='cp';a.href='#'+c.k;a.style.setProperty('--cc',c.c);
+      a.innerHTML='<span class="dot"></span><span class="n">'+c.n+'</span>'+c.t;
+      pills.appendChild(a);
+      if(i<CHAIN.length-1){const s=document.createElement('span');s.className='arr';s.textContent='→';pills.appendChild(s);}
+    });
+    const flow=$('#chainFlow');
+    CHAIN.forEach(c=>{
+      const d=document.createElement('a');d.className='chain-step';d.href='#'+c.k;d.style.setProperty('--cc',c.c);
+      d.innerHTML='<div class="bub">'+c.n+'</div><div><h3><span class="cc">'+c.t+'</span></h3><p>'+c.d+'</p></div>';
+      flow.appendChild(d);
+    });
+    const dots=$('#chainDots');
+    CHAIN.forEach(c=>{
+      const b=document.createElement('button');b.dataset.k=c.k;b.setAttribute('aria-label',c.t);
+      b.innerHTML='<span class="cd" style="--cc:'+c.c+'"></span>';
+      b.addEventListener('click',()=>{const t=document.getElementById(c.k);if(t)t.scrollIntoView({behavior:RM?'auto':'smooth'});});
+      dots.appendChild(b);
+    });
+  }
+
+  /* ============================================================
+     模块 1：遥感监测 · 时间轴 + bloom + 曲线
+     ============================================================ */
+  const M1={t:0.52,playing:false,raf:null,inView:false};
+  const SEASON_DAYS=105; // 5/1 .. 8/14
+  const PEAK_T=0.524, sigL=0.155, sigR=0.275;
+  function coverage(t){ // 0..1 单峰，升快降慢；首尾压平
+    const s=t<PEAK_T?sigL:sigR;
+    let v=Math.exp(-0.5*Math.pow((t-PEAK_T)/s,2));
+    v*=smooth(0.06,0.17,t);          // 5月上旬之前近 0
+    v*=1-smooth(0.90,0.99,t);        // 8月上旬后消亡
+    return clamp(v,0,1);
+  }
+  function dateFromT(t){
+    const day=Math.round(t*SEASON_DAYS);
+    const md=[[5,31],[6,30],[7,31],[8,31]];let rem=day,mi=0;
+    while(mi<md.length-1 && rem>=md[mi][1]){rem-=md[mi][1];mi++;}
+    return {m:md[mi][0],d:rem+1};
+  }
+  function stageOf(t){
+    const dt=dateFromT(t),key=dt.m*100+dt.d;
+    if(key<515) return {n:'监测期 · 零星',c:'#37b6ce'};
+    if(key<615) return {n:'暴发 · 聚集',c:'#5AA8E0'};
+    if(key<708) return {n:'盛期 · 达峰',c:'#4F9D3A'};
+    if(key<806) return {n:'消衰',c:'#E29A2B'};
+    return {n:'基本消亡',c:'#86abbd'};
+  }
+
+  function buildM1Map(){
+    const host=$('#m1Map');
+    const svg=buildBasemap(host,{});
+    const cv=document.createElement('canvas');cv.className='bloom';host.appendChild(cv);
+    M1.host=host;M1.cv=cv;M1.ctx=cv.getContext('2d');
+    // 图例
+    const lg=document.createElement('div');lg.className='map-legend';
+    lg.innerHTML='<span><i style="background:#4F9D3A"></i>浒苔斑块</span><span><i style="background:#E29A2B;border-radius:50%"></i>源区 A–D</span>';
+    host.appendChild(lg);
+    sizeBloom();
+    new ResizeObserver(sizeBloom).observe(host);
+  }
+  function sizeBloom(){
+    if(!M1.cv)return;const r=M1.host.getBoundingClientRect();const dpr=Math.min(devicePixelRatio||1,2);
+    M1.cv.width=Math.max(1,r.width*dpr);M1.cv.height=Math.max(1,r.height*dpr);
+    M1.sx=M1.cv.width/W;M1.sy=M1.cv.height/H;drawBloom();
+  }
+  // 漂移粒子
+  const PARTS=[];for(let i=0;i<46;i++)PARTS.push({u:Math.random(),off:(Math.random()-.5)*26,sp:0.0006+Math.random()*0.0012,a:Math.random()});
+  function drawBloom(){
+    const ctx=M1.ctx;if(!ctx)return;const t=M1.t,cov=coverage(t);
+    ctx.clearRect(0,0,M1.cv.width,M1.cv.height);
+    ctx.save();ctx.scale(M1.sx,M1.sy);
+    // bloom 中心沿漂移轴推进
+    const centroid=smooth(0.10,0.92,t); // 0→1 along path
+    ctx.globalCompositeOperation='lighter';
+    const BL=11;
+    for(let i=0;i<BL;i++){
+      const spread=(i/(BL-1)-0.5);          // -0.5..0.5
+      const along=clamp(centroid + spread*0.30,0,1);
+      const pos=pointOnDrift(along);
+      const lat=(i*53%37)/37; // 伪随机横向抖动
+      const ox=(lat-0.5)*30*(0.5+cov), oy=((i*29%23)/23-0.5)*22;
+      const r=(7+ (1-Math.abs(spread))*26)*(0.35+cov*0.9);
+      const a=cov*(0.5-Math.abs(spread)*0.5)*0.9;
+      if(a<=0.01||r<=0)continue;
+      const gx=pos[0]+ox,gy=pos[1]+oy;
+      const grd=ctx.createRadialGradient(gx,gy,0,gx,gy,r);
+      grd.addColorStop(0,'rgba(160,230,90,'+(a).toFixed(3)+')');
+      grd.addColorStop(0.45,'rgba(79,157,58,'+(a*0.7).toFixed(3)+')');
+      grd.addColorStop(1,'rgba(31,138,112,0)');
+      ctx.fillStyle=grd;ctx.beginPath();ctx.arc(gx,gy,r,0,6.2832);ctx.fill();
+    }
+    // 漂移粒子（随运动）
+    if(cov>0.05){
+      ctx.globalCompositeOperation='lighter';
+      for(const p of PARTS){
+        const along=clamp(centroid + (p.a-0.5)*0.5,0,1);
+        const pos=pointOnDrift(along);
+        const x=pos[0]+Math.cos(p.u*6.28)*p.off, y=pos[1]+Math.sin(p.u*6.28)*p.off*0.7;
+        ctx.fillStyle='rgba(180,233,148,'+(cov*0.5*p.a).toFixed(3)+')';
+        ctx.beginPath();ctx.arc(x,y,1.1,0,6.2832);ctx.fill();
+      }
+    }
+    ctx.restore();
+  }
+  function tickParts(){if(RM)return;for(const p of PARTS){p.u+=p.sp*16;if(p.u>1)p.u-=1;}}
+
+  function buildM1Curve(){
+    const svg=$('#m1Curve');svg.innerHTML='';
+    const defs=el('defs',{},svg);
+    const lg=el('linearGradient',{id:'covgrad',x1:0,y1:0,x2:0,y2:1},defs);
+    el('stop',{offset:0,'stop-color':'#7ad84f','stop-opacity':.8},lg);
+    el('stop',{offset:1,'stop-color':'#1f8a70','stop-opacity':.05},lg);
+    const PAD=16,w=360-PAD*2,h=120,top=10;
+    // 阶段带
+    const bands=[[0.06,0.155,'#37b6ce','监测'],[0.155,0.405,'#5AA8E0','暴发'],[0.405,0.63,'#4F9D3A','盛期'],[0.63,0.96,'#E29A2B','消衰']];
+    bands.forEach(b=>{
+      const x0=PAD+b[0]*w,x1=PAD+b[1]*w;
+      el('rect',{class:'band',x:x0,y:top,width:x1-x0,height:h,fill:b[2]},svg);
+      el('text',{class:'bandlbl',x:(x0+x1)/2,y:top+11,'text-anchor':'middle',fill:b[2]},svg).textContent=b[3];
+    });
+    // 面积曲线
+    let dl='',da='M'+PAD+','+(top+h);
+    for(let i=0;i<=120;i++){const t=i/120;const x=PAD+t*w;const y=top+h-coverage(t)*h*0.96;dl+=(i?'L':'M')+x.toFixed(1)+','+y.toFixed(1);da+='L'+x.toFixed(1)+','+y.toFixed(1);}
+    da+='L'+(PAD+w)+','+(top+h)+'Z';
+    el('path',{class:'area',d:da},svg);
+    el('path',{class:'line',d:dl},svg);
+    el('line',{class:'axis',x1:PAD,y1:top+h,x2:PAD+w,y2:top+h},svg);
+    // 月份刻度
+    [[0,'5月'],[0.295,'6月'],[0.581,'7月'],[0.876,'8月']].forEach(m=>{
+      const x=PAD+m[0]*w;el('line',{class:'axis',x1:x,y1:top+h,x2:x,y2:top+h+4},svg);
+      el('text',{class:'axlbl',x:x,y:top+h+14,'text-anchor':'start'},svg).textContent=m[1];
+    });
+    // 峰值与速率标注（把 22.6%/12.3% 与曲线形状绑定）
+    const pkx=PAD+PEAK_T*w;
+    el('line',{x1:pkx,y1:top+4,x2:pkx,y2:top+h,stroke:'rgba(255,255,255,.30)','stroke-width':1,'stroke-dasharray':'2 3'},svg);
+    el('text',{x:pkx,y:top-1,'text-anchor':'middle','font-size':8,fill:'#cfe8f0','font-family':'var(--hei)'},svg).textContent='6月中–7月上 达峰';
+    el('text',{x:PAD+0.27*w,y:top+54,'text-anchor':'middle','font-size':8,fill:'#7ad84f','font-family':'var(--mono)'},svg).textContent='↑22.6%/d';
+    el('text',{x:PAD+0.79*w,y:top+44,'text-anchor':'middle','font-size':8,fill:'#E29A2B','font-family':'var(--mono)'},svg).textContent='↓12.3%/d';
+    // marker（动态）
+    M1.mLine=el('line',{class:'marker',x1:PAD,y1:top,x2:PAD,y2:top+h},svg);
+    M1.mDot=el('circle',{class:'mdot',cx:PAD,cy:top+h,r:4},svg);
+    M1.curveGeo={PAD,w,h,top};
+  }
+  function updateM1(){
+    const t=M1.t;const dt=dateFromT(t),st=stageOf(t),cov=coverage(t);
+    $('#m1Date').textContent=dt.m+'月'+dt.d+'日';
+    const se=$('#m1Stage');se.textContent=st.n;se.style.background=st.c;
+    $('#m1Cov').textContent='相对覆盖 '+Math.round(cov*100)+'% · 示意';
+    $('#m1Fill').style.width=(t*100)+'%';
+    $('#m1Thumb').style.left=(t*100)+'%';
+    $('#m1Track').setAttribute('aria-valuenow',Math.round(t*SEASON_DAYS));
+    $('#m1Track').setAttribute('aria-valuetext',dt.m+'月'+dt.d+'日 '+st.n);
+    if(M1.curveGeo){const G=M1.curveGeo;const x=G.PAD+t*G.w;const y=G.top+G.h-coverage(t)*G.h*0.96;
+      M1.mLine.setAttribute('x1',x);M1.mLine.setAttribute('x2',x);
+      M1.mDot.setAttribute('cx',x);M1.mDot.setAttribute('cy',y);}
+    drawBloom();
+  }
+  function m1Loop(ts){
+    if(!M1.playing||!M1.inView){M1.raf=null;return;}
+    M1.t+=0.0016*(RM?3:1);
+    if(M1.t>=1){M1.t=1;M1.raf=null;setPlay(false);updateM1();return;}
+    tickParts();updateM1();M1.raf=requestAnimationFrame(m1Loop);
+  }
+  function setPlay(on){
+    M1.playing=on;
+    $('#m1PlayIc').innerHTML=on?'<path d="M6 5h4v14H6zM14 5h4v14h-4z"/>':'<path d="M8 5v14l11-7z"/>';
+    $('#m1PlayTx').textContent=on?'暂停':'播放季节';
+    if(on){if(M1.t>=1)M1.t=0;if(!M1.raf)M1.raf=requestAnimationFrame(m1Loop);}
+  }
+  // 拖动（指针事件，touch+mouse）
+  function bindTrack(){
+    const tr=$('#m1Track');
+    function setFromX(clientX){const r=tr.getBoundingClientRect();M1.t=clamp((clientX-r.left)/r.width,0,1);updateM1();}
+    let dragging=false;
+    tr.addEventListener('pointerdown',e=>{dragging=true;tr.classList.add('grab');try{tr.setPointerCapture(e.pointerId);}catch(_){}setPlay(false);setFromX(e.clientX);e.preventDefault();});
+    tr.addEventListener('pointermove',e=>{if(dragging)setFromX(e.clientX);});
+    tr.addEventListener('pointerup',e=>{dragging=false;tr.classList.remove('grab');});
+    tr.addEventListener('pointercancel',()=>{dragging=false;tr.classList.remove('grab');});
+    tr.addEventListener('keydown',e=>{const step=1/SEASON_DAYS;if(e.key==='ArrowRight'||e.key==='ArrowUp'){M1.t=clamp(M1.t+step,0,1);updateM1();e.preventDefault();}else if(e.key==='ArrowLeft'||e.key==='ArrowDown'){M1.t=clamp(M1.t-step,0,1);updateM1();e.preventDefault();}else if(e.key==='Home'){M1.t=0;updateM1();}else if(e.key==='End'){M1.t=1;updateM1();}});
+    $('#m1Play').addEventListener('click',()=>setPlay(!M1.playing));
+    // ticks
+    const tc=$('#m1Ticks');
+    [[0,'5月'],[0.295,'6月'],[0.581,'7月'],[0.876,'8月']].forEach(m=>{
+      const tk=document.createElement('span');tk.className='tk';tk.style.left=(m[0]*100)+'%';tc.appendChild(tk);
+      const tl=document.createElement('span');tl.className='tklbl';tl.style.left=(m[0]*100)+'%';tl.textContent=m[1];tc.appendChild(tl);
+    });
+  }
+  function buildM1Years(){
+    const YS=[
+      {y:'2017',t:'暴发最早 5/10 · 持续最短 65 d'},
+      {y:'2018',t:'暴发最晚 5/31'},
+      {y:'2019',t:'结束最晚 9/9 · 持续 121 d'},
+      {y:'2014',t:'覆盖面积历史极大值'}
+    ];
+    const host=$('#m1Years');
+    host.insertAdjacentHTML('beforeend','<span style="font-family:var(--mono);font-size:11px;color:var(--dim);align-self:center;margin-right:2px">年际差异（实测）</span>');
+    YS.forEach(o=>{const b=document.createElement('span');b.className='yb';b.innerHTML='<b>'+o.y+'</b>'+o.t;host.appendChild(b);});
+  }
+
+  /* ============================================================
+     模块 2：机制 · 参数滑块 → 示意权重模型
+     ============================================================ */
+  const M2DEF={nutrient:62,wind:58,enso:60,rain:50};
+  const M2=Object.assign({},M2DEF);
+  const M2META=[
+    {k:'nutrient',nm:'营养盐供给',corr:'主导生长期',c:'#4F9D3A',lo:'贫',hi:'富'},
+    {k:'wind',nm:'苏北 6 级大风持续',corr:'r≈0.75',c:'#37b6ce',lo:'短',hi:'长'},
+    {k:'enso',nm:'ENSO 状态',corr:'厄尔尼诺次年偏多',c:'#2e6fa8',lo:'拉尼娜',hi:'厄尔尼诺'},
+    {k:'rain',nm:'降水',corr:'中等正相关',c:'#5AA8E0',lo:'少',hi:'多'}
+  ];
+  function m2Predict(){ // 0..100 示意
+    const n=M2.nutrient/100,w=M2.wind/100,e=M2.enso/100,r=M2.rain/100;
+    let v=8 + 30*n + 34*w + 16*e + 12*r;          // 权重贴合相关性
+    return clamp(Math.round(v),0,100);
+  }
+  function m2Update(){
+    const v=m2Predict();
+    $('#m2Gval').innerHTML=v+'<small>/100</small>';
+    const gb=$('#m2Gbar');gb.style.width=v+'%';
+    let tag,col,note;
+    if(v<33){tag='小年';col='#37b6ce';note='驱动偏弱：营养盐供给不足或偏北风滞留时间短，浒苔难以聚集放大，最大覆盖面积偏低。';}
+    else if(v<66){tag='常年';col='#1f8a70';note='驱动中性：各因子接近常态，覆盖面积处于多年中位水平。';}
+    else{tag='大年';col='#E29A2B';note='驱动叠加：充足营养盐 + 苏北大风长时间持续 + 厄尔尼诺次年背景，利于浒苔滞留与放大，最大覆盖面积偏高。';}
+    const gt=$('#m2Gtag');gt.textContent=tag;gt.style.background=col;gt.style.color='#04203f';
+    gb.style.background='linear-gradient(90deg,#0d4a7a,'+col+')';
+    $('#m2Gval').style.color=col;
+    $('#m2Gnote').textContent=note;
+    m2Contrib();
+  }
+  function m2Contrib(){
+    const box=$('#m2Contrib');if(!box)return;
+    const terms=[{v:34*M2.wind/100,c:'#37b6ce',nm:'大风'},{v:30*M2.nutrient/100,c:'#4F9D3A',nm:'营养盐'},{v:16*M2.enso/100,c:'#2e6fa8',nm:'ENSO'},{v:12*M2.rain/100,c:'#5AA8E0',nm:'降水'}];
+    const base=8,tot=base+terms.reduce((s,t)=>s+t.v,0);
+    let lead=terms[0];terms.forEach(t=>{if(t.v>lead.v)lead=t;});
+    let bars='<i style="width:'+(base/tot*100).toFixed(1)+'%;background:rgba(150,200,222,.22)"></i>';
+    terms.forEach(t=>{bars+='<i style="width:'+(t.v/tot*100).toFixed(1)+'%;background:'+t.c+'"></i>';});
+    const leg=terms.map(t=>'<span><i style="background:'+t.c+'"></i>'+t.nm+'</span>').join('');
+    box.innerHTML='<div class="ch"><span>各因子对指数的贡献 <span class="shi"></span></span><span>本年由 <b>'+lead.nm+'</b> 主导</span></div><div class="cbar">'+bars+'</div><div class="leg">'+leg+'</div>';
+  }
+  function buildM2(){
+    const host=$('#m2Sliders');
+    M2META.forEach(m=>{
+      const wrap=document.createElement('div');wrap.className='sld';wrap.style.setProperty('--sld-c',m.c);
+      wrap.innerHTML=
+        '<div class="top"><div class="nm">'+m.nm+'<span class="corr">'+m.corr+'</span></div><div class="val" id="v_'+m.k+'"></div></div>'+
+        '<input type="range" min="0" max="100" value="'+M2[m.k]+'" id="r_'+m.k+'" aria-label="'+m.nm+'">'+
+        '<div class="ends"><span>'+m.lo+'</span><span>'+m.hi+'</span></div>';
+      host.appendChild(wrap);
+      const inp=wrap.querySelector('input');
+      function sync(){const val=+inp.value;M2[m.k]=val;inp.style.setProperty('--p',val+'%');
+        const lbl=wrap.querySelector('#v_'+m.k);
+        lbl.textContent=(m.k==='enso')?(val<42?'拉尼娜':val>58?'厄尔尼诺':'中性')+' '+val:val+'%';
+        m2Update();}
+      inp.addEventListener('input',sync);sync();
+    });
+    $('#m2Reset').addEventListener('click',()=>{Object.assign(M2,M2DEF);M2META.forEach(m=>{const inp=$('#r_'+m.k);inp.value=M2[m.k];inp.dispatchEvent(new Event('input'));});});
+  }
+
+  /* ============================================================
+     模块 3：耦合模型流程 + 温度阈值
+     ============================================================ */
+  const FNODES={
+    in1:{t:'风场 + 流场',s:'HYCOM · FVCOM · ROMS',role:'输运因子',c:'#2e6fa8',x:14,y:18,w:158,h:54,
+      d:'以海表风场与表层流场驱动浒苔粒子运动。HYCOM（混合坐标·大尺度）、FVCOM（非结构有限体积·近岸河口复杂地形）、ROMS（区域海洋）为粒子输运提供速度场与温度场。'},
+    in2:{t:'温度·光照·营养盐',s:'氮 / 磷',role:'生态因子',c:'#4F9D3A',x:188,y:18,w:158,h:54,
+      d:'温度、光照、氮磷营养盐限制生长率，温度同时影响死亡率。生长期温光通常适宜（16–21℃），并非年际差异主因；营养盐浓度年际差异明显，是生长期主控。'},
+    drift:{t:'漂移模块',s:'粒子输运·路径转向',role:'where',c:'#37b6ce',x:14,y:120,w:158,h:50,
+      d:'风流决定浒苔“去哪里”。改变藻体所处位置，使其进入不同的温度、光照与营养盐环境，从而间接调节生长速度与规模——风流不直接决定生物量。'},
+    eco:{t:'生态模块',s:'生长率 / 死亡率',role:'how much',c:'#4F9D3A',x:188,y:120,w:158,h:50,
+      d:'温光营养盐决定浒苔“长多少、活多久”。敏感性试验表明：适宜温光背景下，营养盐显著影响生长阶段的持续时间与最大生物量。'},
+    out:{t:'漂移路径 · 覆盖面积 · 生物量',s:'预报输出',role:'forecast',c:'#7ad84f',x:54,y:214,w:252,h:48,
+      d:'耦合输出动态预报：模拟覆盖黄海及邻近海域、时段 2008—2017 年并经卫星验证，能较好再现漂移路径与转向时间，过程约 62–94 d，与遥感季节节律互证。'},
+    verify:{t:'卫星遥感验证',s:'迭代校正',role:'validate',c:'#E29A2B',x:248,y:120,w:98,h:50,dash:true,
+      d:'模型须与观测迭代验证：海洋数值模型已从单纯水动力描述，扩展到与生态、生物、粒子输运耦合；由静态监测走向可靠预报，离不开遥感的初始场与验证基准。'}
+  };
+  function buildM3(){
+    const svg=$('#m3Flow');svg.innerHTML='';
+    const defs=el('defs',{},svg);
+    const mk=el('marker',{id:'fa',markerWidth:8,markerHeight:8,refX:6,refY:3,orient:'auto'},defs);
+    el('path',{d:'M0,0 L7,3 L0,6 Z',fill:'rgba(122,216,79,.7)'},mk);
+    // 连线
+    const edge=(x1,y1,x2,y2,dash)=>el('path',{class:'flow-edge'+(dash?' dash':''),d:'M'+x1+','+y1+' L'+x2+','+y2,'marker-end':'url(#fa)'},svg);
+    edge(93,72,93,120); edge(267,72,267,120);
+    edge(93,170,150,214); edge(267,170,210,214);
+    // verify 反馈虚线
+    el('path',{class:'flow-edge dash',d:'M297,120 C297,96 297,86 297,80 L297,40 C297,30 200,28 180,42',fill:'none','marker-end':'url(#fa)'},svg);
+    // 节点
+    for(const k in FNODES){
+      const n=FNODES[k];
+      const g=el('g',{class:'fnode',id:'fn_'+k,tabindex:0,role:'button','aria-pressed':'false','aria-label':n.t},svg);
+      el('rect',{x:n.x,y:n.y,width:n.w,height:n.h,rx:9,fill:'color-mix(in srgb,'+n.c+' 16%, #08284e)',stroke:n.c,'stroke-width':1.3,'stroke-dasharray':n.dash?'4 3':'0'},g);
+      const ft=el('text',{class:'ft',x:n.x+n.w/2,y:n.y+(n.s?n.h/2-3:n.h/2+4),'text-anchor':'middle','font-size':12.5,fill:n.c},g);ft.textContent=n.t;
+      if(n.s){const fs=el('text',{class:'fs',x:n.x+n.w/2,y:n.y+n.h/2+13,'text-anchor':'middle','font-size':8.5,fill:'rgba(188,214,226,.8)'},g);fs.textContent=n.s;}
+      const sel=()=>selectNode(k);
+      g.addEventListener('click',sel);g.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){sel();e.preventDefault();}});
+    }
+    const list=$('#m3List');
+    if(list){for(const k in FNODES){const n=FNODES[k];const b=document.createElement('button');b.dataset.k=k;b.setAttribute('aria-pressed','false');b.innerHTML='<span class="nd" style="background:'+n.c+'"></span>'+n.t;b.addEventListener('click',()=>selectNode(k));list.appendChild(b);}}
+    selectNode('out');
+  }
+  function selectNode(k){
+    const n=FNODES[k];
+    document.querySelectorAll('.fnode').forEach(g=>{
+      g.classList.remove('active');g.setAttribute('aria-pressed','false');
+      const r=g.querySelector('rect');if(r){if(!r.dataset.base)r.dataset.base=r.getAttribute('fill');r.setAttribute('fill',r.dataset.base);}
+    });
+    const cur=$('#fn_'+k);
+    if(cur){cur.classList.add('active');cur.setAttribute('aria-pressed','true');const r=cur.querySelector('rect');if(r)r.setAttribute('fill','color-mix(in srgb,'+n.c+' 34%, #08284e)');}
+    const det=$('#m3Detail');det.classList.add('swap');
+    setTimeout(()=>{det.innerHTML='<div class="fd-h"><span class="pin" style="background:'+n.c+'"></span>'+n.t+'<span class="fd-role">'+n.role+'</span></div><p>'+n.d+'</p>';det.classList.remove('swap');},120);
+    document.querySelectorAll('#m3List button').forEach(b=>b.setAttribute('aria-pressed',b.dataset.k===k?'true':'false'));
+  }
+  function buildM3Temp(){
+    // 温度条标签
+    const bar=$('#m3Tempbar');
+    [['偏冷',15],['适宜 16–21℃',42],['过渡',67],['消亡 >26℃',90]].forEach(z=>{
+      const s=document.createElement('span');s.className='zlbl';s.style.left=z[1]+'%';s.textContent=z[0];bar.appendChild(s);
+    });
+    const marks=$('#m3Marks');
+    if(marks){[['10℃',0,'l'],['16',30],['21',55],['26',80],['30℃',100,'r']].forEach(m=>{
+      const s=document.createElement('span');s.textContent=m[0];
+      if(m[2]==='l'){s.style.left='0';}
+      else if(m[2]==='r'){s.style.right='0';}
+      else{s.style.left=m[1]+'%';s.style.transform='translateX(-50%)';}
+      marks.appendChild(s);
+    });}
+    const inp=$('#m3Temp');
+    function sync(){
+      const tC=(+inp.value)/10;
+      $('#m3TempV').innerHTML=tC.toFixed(1)+'<small>℃</small>';
+      let st,col;
+      if(tC<16){st='偏冷 · 生长受限';col='#2e6fa8';}
+      else if(tC<=21){st='适宜生长';col='#4F9D3A';}
+      else if(tC<26){st='过渡 · 生长趋缓';col='#9ec34a';}
+      else{st='促进消亡';col='#C0392B';}
+      const e=$('#m3TempState');e.textContent=st;e.style.background=col;e.style.color=tC>=16&&tC<26?'#04203f':'#fff';
+      // 进度色
+      const p=((+inp.value)-100)/200*100;inp.style.setProperty('--p',p+'%');inp.style.setProperty('--sld-c',col);
+    }
+    inp.addEventListener('input',sync);sync();
+  }
+
+  /* ============================================================
+     模块 4：动态风险四级图
+     ============================================================ */
+  const RISK=[ // index 0–10（示意），H 致险危险性，V 承灾体脆弱性
+    {nm:'青岛近岸',lon:120.38,lat:36.07,idx:8.2,H:7.8,V:8.9,dx:-7,note:'旅游岸线与养殖密集、暴露与脆弱性高；又处漂移主路径与盛期登陆区，致险与脆弱叠加 → 重大。'},
+    {nm:'海州湾/连云港',lon:119.40,lat:34.75,idx:6.1,H:5.0,V:7.4,dx:6,note:'港口与临港产业脆弱性高；虽距源近但漂移主体多向东北，致险中等 → 较大。'},
+    {nm:'日照',lon:119.53,lat:35.42,idx:5.4,H:6.2,V:5.1,dx:6,note:'处漂移路径中段，致险偏高；岸段脆弱性中等 → 较大。'},
+    {nm:'盐城近岸',lon:120.30,lat:33.45,idx:4.3,H:7.0,V:3.0,dx:6,note:'紧邻源区、致险高，但以滩涂湿地为主、人口与资产暴露低 → 风险仅一般。距离近 ≠ 风险高。'},
+    {nm:'烟台',lon:121.45,lat:37.46,idx:3.6,H:4.2,V:3.4,dy:-7,note:'多位于漂移前缘北侧，致险与脆弱性均中等偏低 → 一般。'},
+    {nm:'威海/成山头',lon:122.50,lat:37.40,idx:2.1,H:2.8,V:2.0,dx:6,note:'半岛东端、漂移路径末梢，到达概率与生物量均低 → 风险低。'}
+  ];
+  function riskLevel(i){return i<2.5?{n:'低',c:'#4F9D3A'}:i<5?{n:'一般',c:'#C6CF3A'}:i<7.5?{n:'较大',c:'#E29A2B'}:{n:'重大',c:'#C0392B'};}
+  let M4cur=0;
+  function buildM4(){
+    const host=$('#m4Map');
+    const svg=buildBasemap(host,{drift:false,src:false});
+    el('text',{class:'sea-lbl',x:px(122.0),y:py(33.4),'font-size':9,'text-anchor':'middle',fill:'rgba(226,154,43,.6)'},svg).textContent='← 漂移来向';
+    RISK.forEach((r,i)=>{
+      const x=px(r.lon),y=py(r.lat),lv=riskLevel(r.idx);
+      const g=el('g',{class:'risk-seg',id:'rs_'+i,tabindex:0,role:'button','aria-pressed':'false','aria-label':r.nm+' 风险'+lv.n},svg);
+      el('circle',{cx:x,cy:y,r:24,fill:'transparent','pointer-events':'all'},g);
+      el('circle',{class:'halo',cx:x,cy:y,r:16,fill:lv.c,opacity:.16},g);
+      el('circle',{cx:x,cy:y,r:9,fill:lv.c,stroke:'#03193f','stroke-width':1.5},g);
+      el('text',{x:x,y:y+3.5,'text-anchor':'middle','font-size':9,fill:'#03193f'},g).textContent=r.idx.toFixed(1);
+      const t=el('text',{class:'city-lbl',x:x+(r.dx||11),y:y+(r.dy||3),'font-size':10,fill:'#eaf3f7'},g);t.textContent=r.nm;
+      if((r.dx||11)<0)t.setAttribute('text-anchor','end');
+      const sel=()=>selectRisk(i);
+      g.addEventListener('click',sel);g.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){sel();e.preventDefault();}});
+    });
+    // 图例
+    const lg=document.createElement('div');lg.className='map-legend';
+    lg.innerHTML='<span>风险指数 0–10</span><span><i style="background:#C0392B"></i>重大 · <i style="background:#E29A2B"></i>较大</span><span><i style="background:#C6CF3A"></i>一般 · <i style="background:#4F9D3A"></i>低</span>';
+    host.appendChild(lg);
+    // 岸段快捷列表
+    const list=$('#m4List');
+    RISK.forEach((r,i)=>{const lv=riskLevel(r.idx);const b=document.createElement('button');b.textContent=r.nm;b.dataset.i=i;b.style.setProperty('background',i===0?lv.c:'');b.addEventListener('click',()=>selectRisk(i));list.appendChild(b);});
+    // 四级标尺
+    const sc=$('#m4Scale');
+    [['低','#4F9D3A','[0, 2.5)'],['一般','#C6CF3A','[2.5, 5)'],['较大','#E29A2B','[5, 7.5)'],['重大','#C0392B','[7.5, 10]']].forEach(s=>{
+      const d=document.createElement('div');d.className='rs';d.innerHTML='<div class="lv" style="background:'+s[1]+'">'+s[0]+'</div><div class="rg">'+s[2]+'</div>';sc.appendChild(d);
+    });
+    selectRisk(0);
+  }
+  function selectRisk(i){
+    M4cur=i;const r=RISK[i],lv=riskLevel(r.idx);
+    document.querySelectorAll('.risk-seg').forEach(g=>{g.classList.remove('active');g.setAttribute('aria-pressed','false');});
+    const cur=$('#rs_'+i);if(cur){cur.classList.add('active');cur.setAttribute('aria-pressed','true');cur.parentNode.appendChild(cur);}
+    $('#m4Detail').innerHTML=
+      '<div class="rd-top"><span class="rd-name">'+r.nm+'</span>'+
+      '<span class="rd-lv" style="background:'+lv.c+'">'+lv.n+'</span>'+
+      '<span class="rd-idx">风险指数 <b>'+r.idx.toFixed(1)+'</b>/10</span></div>'+
+      '<div class="compo">'+
+        compoRow('致险因子危险性',r.H,'#E29A2B')+
+        compoRow('承灾体脆弱性',r.V,'#2e6fa8')+
+      '</div>'+
+      '<p class="rd-note">'+r.note+'</p>';
+    document.querySelectorAll('#m4List button').forEach((b,bi)=>{b.setAttribute('aria-pressed',bi===i);b.style.background=bi===i?lv.c:'';b.style.color=bi===i?'#04203f':'';});
+  }
+  function compoRow(label,v,c){
+    return '<div class="crow"><div class="cl">'+label+'<span class="cv">'+v.toFixed(1)+'</span></div>'+
+      '<div class="cbar"><i style="width:'+(v*10)+'%;background:'+c+'"></i></div></div>';
+  }
+
+  /* ============================================================
+     滚动：reveal / 链路进度 / 顶栏 / 回顶 / 离屏暂停
+     ============================================================ */
+  function observers(){
+    // reveal
+    if('IntersectionObserver'in window){
+      const io=new IntersectionObserver((es)=>{es.forEach(e=>{if(e.isIntersecting){e.target.classList.add('in');io.unobserve(e.target);}});},{rootMargin:'0px 0px -8% 0px',threshold:.06});
+      document.querySelectorAll('.reveal').forEach(x=>io.observe(x));
+    } else document.querySelectorAll('.reveal').forEach(x=>x.classList.add('in'));
+
+    // 链路进度（哪个模块在视口中部）
+    const dots=Array.from(document.querySelectorAll('#chainDots button'));
+    const idxOf=k=>CHAIN.findIndex(c=>c.k===k);
+    if('IntersectionObserver'in window){
+      const io2=new IntersectionObserver((es)=>{
+        es.forEach(e=>{
+          if(e.isIntersecting){
+            const k=e.target.id;const ci=idxOf(k);
+            dots.forEach((d,di)=>{if(di===ci)d.setAttribute('aria-current','true');else d.removeAttribute('aria-current');d.classList.toggle('done',di<ci);});
+            if(k==='m1'){M1.inView=true;if(M1.playing&&!M1.raf)M1.raf=requestAnimationFrame(m1Loop);}
+          } else if(e.target.id==='m1'){M1.inView=false;if(M1.raf){cancelAnimationFrame(M1.raf);M1.raf=null;}}
+        });
+      },{rootMargin:'-45% 0px -45% 0px'});
+      ['m1','m2','m3','m4'].forEach(k=>{const t=document.getElementById(k);if(t)io2.observe(t);});
+    }
+
+    // 顶栏样式 + 回顶
+    const top=$('#gtTop'),tt=$('#toTop');
+    const onScroll=()=>{const y=scrollY;top.classList.toggle('scrolled',y>window.innerHeight*0.6);tt.classList.toggle('show',y>window.innerHeight*1.2);};
+    addEventListener('scroll',onScroll,{passive:true});onScroll();
+    tt.addEventListener('click',()=>scrollTo({top:0,behavior:RM?'auto':'smooth'}));
+  }
+
+  /* ===== 背景海流粒子 ===== */
+  function oceanBG(){
+    const cv=$('#ocean-bg');if(!cv)return;const ctx=cv.getContext('2d');let w,h,dpr,ps=[],raf=null,vis=true;
+    function size(){dpr=Math.min(devicePixelRatio||1,2);w=cv.width=innerWidth*dpr;h=cv.height=innerHeight*dpr;}
+    size();
+    const N=RM?40:80;for(let i=0;i<N;i++)ps.push({x:Math.random()*w,y:Math.random()*h,v:(0.15+Math.random()*0.4)*dpr,r:(0.4+Math.random()*1.1)*dpr,a:0.1+Math.random()*0.35});
+    function draw(){
+      ctx.clearRect(0,0,w,h);
+      for(const p of ps){
+        ctx.beginPath();ctx.arc(p.x,p.y,p.r,0,6.2832);
+        ctx.fillStyle='rgba(140,200,180,'+p.a.toFixed(2)+')';ctx.fill();
+        if(!RM){p.x+=p.v*0.5;p.y-=p.v;if(p.y<-4){p.y=h+4;p.x=Math.random()*w;}if(p.x>w+4)p.x=-4;}
+      }
+      if(!RM&&vis){raf=requestAnimationFrame(draw);}else{raf=null;}
+    }
+    addEventListener('resize',()=>{size();if(RM)draw();},{passive:true});
+    document.addEventListener('visibilitychange',()=>{vis=!document.hidden;if(vis&&!RM&&!raf){raf=requestAnimationFrame(draw);}});
+    draw();
+  }
+
+  /* ===== init ===== */
+  function init(){
+    try{buildChain();}catch(e){console.warn('chain',e);}
+    try{buildM1Map();buildM1Curve();bindTrack();buildM1Years();updateM1();}catch(e){console.warn('m1',e);}
+    try{buildM2();m2Update();}catch(e){console.warn('m2',e);}
+    try{buildM3();buildM3Temp();}catch(e){console.warn('m3',e);}
+    try{buildM4();}catch(e){console.warn('m4',e);}
+    try{observers();}catch(e){console.warn('obs',e);}
+    try{oceanBG();}catch(e){console.warn('bg',e);}
+    // 平滑锚点（避开 sticky 顶栏）
+    document.querySelectorAll('a[href^="#"]').forEach(a=>{
+      a.addEventListener('click',e=>{const id=a.getAttribute('href');if(id.length<2)return;const t=document.querySelector(id);if(!t)return;e.preventDefault();const off=64;const y=t.getBoundingClientRect().top+scrollY-off;scrollTo({top:y,behavior:RM?'auto':'smooth'});});
+    });
+  }
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init);else init();
+})();
+</script>
+</body>
+</html>
