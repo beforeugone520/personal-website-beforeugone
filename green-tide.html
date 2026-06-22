@@ -499,6 +499,25 @@ svg.flowsvg{width:100%;height:auto;display:block;overflow:visible}
 .ys-leg i{width:9px;height:9px;border-radius:2px}
 .ys-leg .ys-note{color:var(--dim)}
 
+/* ── 串成一条链：术语锚注 / 进度轨 / 跑预报 ── */
+.gloss{font:inherit;background:none;border:none;padding:0;cursor:pointer;color:var(--ulva-lt);border-bottom:1px dashed color-mix(in srgb,var(--ulva-lt) 60%,transparent)}
+.gloss:hover,.gloss:focus-visible{border-bottom-style:solid}
+.gloss-pop{position:absolute;z-index:120;display:none;background:var(--sea-2);border:1px solid var(--line-2);border-radius:12px;padding:12px 14px;font-family:var(--song);font-size:12.5px;line-height:1.62;color:var(--fg-2);box-shadow:0 24px 50px -24px #000}
+.gloss-pop b{display:block;font-family:var(--hei);font-weight:800;font-size:13px;color:var(--ulva-lt);margin-bottom:5px}
+.chain-rail{position:fixed;top:0;right:0;width:3px;height:100vh;z-index:45;background:rgba(150,200,222,.10);opacity:0;transition:opacity .4s;pointer-events:none}
+.chain-rail.show{opacity:1}
+.chain-rail .fill{position:absolute;top:0;left:0;right:0;height:0;background:linear-gradient(#37b6ce,#2e6fa8,#4F9D3A,#E29A2B)}
+.fc-btn{display:inline-flex;align-items:center;justify-content:center;gap:9px;width:100%;margin-top:16px;font-family:var(--hei);font-weight:800;font-size:14.5px;padding:13px 18px;border-radius:12px;border:1px solid color-mix(in srgb,var(--ulva) 50%,var(--line-2));background:color-mix(in srgb,var(--ulva) 14%,var(--card));color:var(--fg);min-height:48px;transition:background .2s,border-color .2s,transform .08s}
+.fc-btn:hover{background:color-mix(in srgb,var(--ulva) 22%,var(--card));border-color:var(--ulva)}
+.fc-btn:active{transform:translateY(1px)}
+.fc-btn.on{border-color:var(--amber);background:color-mix(in srgb,var(--amber) 16%,var(--card))}
+.fc-btn .ti{color:var(--ulva-lt);font-size:12px}
+.fc-cap{position:fixed;left:50%;bottom:calc(var(--safe-b) + 18px);transform:translateX(-50%);z-index:95;max-width:min(560px,92vw);display:flex;align-items:center;gap:12px;background:rgba(6,26,52,.94);border:1px solid var(--line-2);border-radius:14px;padding:13px 14px 13px 18px;backdrop-filter:blur(10px);box-shadow:0 24px 50px -22px #000;opacity:0;pointer-events:none;transition:opacity .35s,transform .35s;font-family:var(--song);font-size:13.5px;line-height:1.55;color:var(--fg)}
+.fc-cap.show{opacity:1;pointer-events:auto}
+.fc-cap b{color:var(--ulva-lt);font-family:var(--hei);font-weight:800}
+.fc-cap .fc-x{flex:0 0 auto;width:30px;height:30px;border-radius:8px;border:1px solid var(--line);background:none;color:var(--muted);font-size:13px;cursor:pointer}
+.fc-cap .fc-x:hover{color:var(--fg)}
+
 @media (prefers-reduced-motion:reduce){
   *,*::before,*::after{animation-duration:.001ms!important;animation-iteration-count:1!important;transition-duration:.001ms!important;scroll-behavior:auto!important}
 }
@@ -619,6 +638,8 @@ svg.flowsvg{width:100%;height:auto;display:block;overflow:visible}
       <p style="font-size:11.5px;color:var(--muted);margin-top:12px;line-height:1.6;font-family:var(--song)">因子间存在相关与非线性，此处为各因子线性叠加的<b style="color:var(--fg-2)">教学示意</b>，用于演示「谁把面积推上去」，并非真实预报。</p>
       <button class="btn-reset" id="m2Reset">复位到常年</button>
     </div>
+
+    <button class="fc-btn" id="m2Run" type="button"><span class="ti" aria-hidden="true">▶</span> 顺这条链跑一遍这次情景</button>
 
     <div class="panel reveal yearstrip" id="m2Years" style="margin-top:16px;padding:16px 16px 14px"></div>
 
@@ -1219,6 +1240,16 @@ svg.flowsvg{width:100%;height:auto;display:block;overflow:visible}
     {nm:'威海/成山头',lon:122.50,lat:37.40,idx:2.1,H:2.8,V:2.0,dx:6,note:'半岛东端、漂移路径末梢，到达概率与生物量均低 → 风险低。'}
   ];
   function riskLevel(i){return i<2.5?{n:'低',c:'#4F9D3A'}:i<5?{n:'一般',c:'#C6CF3A'}:i<7.5?{n:'较大',c:'#E29A2B'}:{n:'重大',c:'#C0392B'};}
+  var riskScale=1;                         // 跑预报时按情景整体缩放岸段指数
+  function dispIdx(r){return clamp(r.idx*riskScale,0,10);}
+  function reRenderRisk(){
+    RISK.forEach((r,i)=>{const di=dispIdx(r),lv=riskLevel(di);const g=$('#rs_'+i);if(!g)return;
+      const halo=g.querySelector('.halo'),dot=g.querySelector('.dot'),num=g.querySelector('.idxnum');
+      if(halo)halo.setAttribute('fill',lv.c);if(dot)dot.setAttribute('fill',lv.c);if(num)num.textContent=di.toFixed(1);
+      g.setAttribute('aria-label',r.nm+' 风险'+lv.n);
+    });
+    if(typeof M4cur==='number')selectRisk(M4cur);
+  }
   let M4cur=0;
   function buildM4(){
     const host=$('#m4Map');
@@ -1227,12 +1258,12 @@ svg.flowsvg{width:100%;height:auto;display:block;overflow:visible}
     const scn=document.createElement('div');scn.className='scanline';host.appendChild(scn);
     el('text',{class:'sea-lbl',x:px(122.0),y:py(33.4),'font-size':9,'text-anchor':'middle',fill:'rgba(226,154,43,.6)'},svg).textContent='← 漂移来向';
     RISK.forEach((r,i)=>{
-      const x=px(r.lon),y=py(r.lat),lv=riskLevel(r.idx);
+      const x=px(r.lon),y=py(r.lat),di=dispIdx(r),lv=riskLevel(di);
       const g=el('g',{class:'risk-seg',id:'rs_'+i,tabindex:0,role:'button','aria-pressed':'false','aria-label':r.nm+' 风险'+lv.n},svg);
       el('circle',{cx:x,cy:y,r:24,fill:'transparent','pointer-events':'all'},g);
       el('circle',{class:'halo',cx:x,cy:y,r:16,fill:lv.c,opacity:.16},g);
-      el('circle',{cx:x,cy:y,r:9,fill:lv.c,stroke:'#03193f','stroke-width':1.5},g);
-      el('text',{x:x,y:y+3.5,'text-anchor':'middle','font-size':9,fill:'#03193f'},g).textContent=r.idx.toFixed(1);
+      el('circle',{class:'dot',cx:x,cy:y,r:9,fill:lv.c,stroke:'#03193f','stroke-width':1.5},g);
+      el('text',{class:'idxnum',x:x,y:y+3.5,'text-anchor':'middle','font-size':9,fill:'#03193f'},g).textContent=di.toFixed(1);
       const t=el('text',{class:'city-lbl',x:x+(r.dx||11),y:y+(r.dy||3),'font-size':10,fill:'#eaf3f7'},g);t.textContent=r.nm;
       if((r.dx||11)<0)t.setAttribute('text-anchor','end');
       const sel=()=>selectRisk(i);
@@ -1244,7 +1275,7 @@ svg.flowsvg{width:100%;height:auto;display:block;overflow:visible}
     host.appendChild(lg);
     // 岸段快捷列表
     const list=$('#m4List');
-    RISK.forEach((r,i)=>{const lv=riskLevel(r.idx);const b=document.createElement('button');b.textContent=r.nm;b.dataset.i=i;b.style.setProperty('background',i===0?lv.c:'');b.addEventListener('click',()=>selectRisk(i));list.appendChild(b);});
+    RISK.forEach((r,i)=>{const lv=riskLevel(dispIdx(r));const b=document.createElement('button');b.textContent=r.nm;b.dataset.i=i;b.style.setProperty('background',i===0?lv.c:'');b.addEventListener('click',()=>selectRisk(i));list.appendChild(b);});
     // 四级标尺
     const sc=$('#m4Scale');
     [['低','#4F9D3A','[0, 2.5)'],['一般','#C6CF3A','[2.5, 5)'],['较大','#E29A2B','[5, 7.5)'],['重大','#C0392B','[7.5, 10]']].forEach(s=>{
@@ -1253,13 +1284,13 @@ svg.flowsvg{width:100%;height:auto;display:block;overflow:visible}
     selectRisk(0);
   }
   function selectRisk(i){
-    M4cur=i;const r=RISK[i],lv=riskLevel(r.idx);
+    M4cur=i;const r=RISK[i],di=dispIdx(r),lv=riskLevel(di);
     document.querySelectorAll('.risk-seg').forEach(g=>{g.classList.remove('active');g.setAttribute('aria-pressed','false');});
     const cur=$('#rs_'+i);if(cur){cur.classList.add('active');cur.setAttribute('aria-pressed','true');cur.parentNode.appendChild(cur);}
     $('#m4Detail').innerHTML=
       '<div class="rd-top"><span class="rd-name">'+r.nm+'</span>'+
       '<span class="rd-lv" style="background:'+lv.c+'">'+lv.n+'</span>'+
-      '<span class="rd-idx">风险指数 <b>'+r.idx.toFixed(1)+'</b>/10</span></div>'+
+      '<span class="rd-idx">风险指数 <b>'+di.toFixed(1)+'</b>/10</span></div>'+
       '<div class="compo">'+
         compoRow('致险因子危险性',r.H,'#E29A2B')+
         compoRow('承灾体脆弱性',r.V,'#2e6fa8')+
@@ -1452,6 +1483,107 @@ svg.flowsvg{width:100%;height:auto;display:block;overflow:visible}
     btn.addEventListener('click',()=>{if(TOUR.on)stop();else{TOUR.on=true;setBtn();go(0);}});
   }
 
+  /* ============================================================
+     串成一条链：术语锚注 / 右缘进度轨 / 跑一遍预报
+     ============================================================ */
+  var GLOSS={
+    'LTRANS-GT':'在 LTRANS 拉格朗日粒子输运模型基础上，加入温度/光照/营养盐等生态过程的物理–生态耦合模型。',
+    'ENSO':'厄尔尼诺–南方涛动：赤道太平洋海温的年际冷暖振荡，经环流与水汽影响江淮/苏北的降水与积温。',
+    '致险危险性':'致险因子本身的危险程度＝孕灾环境＋灾情＋预警区危险性（海温/营养盐/风速/预测覆盖率/历史频次等）。',
+    '承灾体脆弱性':'承灾体受损的难易＝自然属性＋社会人文价值＋管理需求；决定同样浒苔下谁损失更大。',
+    '初始场':'模型起算时刻的状态（绿潮位置、面积、源地等），这里由卫星遥感提供。',
+    '生物量':'单位区域内浒苔的质量，反映绿潮的「量」而不仅是覆盖面积。',
+    '盛期':'绿潮覆盖面积维持高位的阶段，约 6 月中旬至 7 月上旬，持续约 48 d。',
+    'HYCOM':'混合坐标海洋模式，模拟大尺度环流，为粒子输运提供速度场/温度场。',
+    'FVCOM':'非结构有限体积近岸海洋模式，擅长河口与复杂地形。',
+    'ROMS':'区域海洋模式系统，常用于区域尺度环流模拟。'
+  };
+  var glossPop=null;
+  function glossInit(){
+    const terms=Object.keys(GLOSS).sort((a,b)=>b.length-a.length); // 长词优先，避免子串先匹配
+    const done={};
+    document.querySelectorAll('#chain .abstract, .module .dek').forEach(root=>{
+      const wk=document.createTreeWalker(root,NodeFilter.SHOW_TEXT,null);
+      const texts=[];let n;while(n=wk.nextNode())texts.push(n);
+      texts.forEach(tn=>{
+        if(!tn.nodeValue||!tn.parentNode)return;
+        const pn=tn.parentNode.nodeName;if(pn==='BUTTON'||pn==='A')return;
+        for(const term of terms){
+          if(done[term])continue;
+          const idx=tn.nodeValue.indexOf(term);if(idx<0)continue;
+          done[term]=true;
+          const after=tn.splitText(idx);after.nodeValue=after.nodeValue.slice(term.length);
+          const b=document.createElement('button');b.className='gloss';b.type='button';b.textContent=term;b.dataset.k=term;
+          tn.parentNode.insertBefore(b,after);
+          break;
+        }
+      });
+    });
+    document.addEventListener('click',e=>{
+      const g=e.target.closest&&e.target.closest('.gloss');
+      if(g){showGloss(g);e.stopPropagation();}
+      else if(glossPop&&!(e.target.closest&&e.target.closest('.gloss-pop')))hideGloss();
+    });
+    addEventListener('scroll',hideGloss,{passive:true});
+  }
+  function showGloss(b){
+    if(!glossPop){glossPop=document.createElement('div');glossPop.className='gloss-pop';document.body.appendChild(glossPop);}
+    glossPop.innerHTML='<b>'+b.dataset.k+'</b>'+GLOSS[b.dataset.k];
+    glossPop.style.visibility='hidden';glossPop.style.display='block';
+    const r=b.getBoundingClientRect();const pw=Math.min(290,innerWidth-24);glossPop.style.width=pw+'px';
+    let left=r.left+r.width/2-pw/2;left=Math.max(12,Math.min(left,innerWidth-pw-12));
+    let top=r.bottom+8;if(top+glossPop.offsetHeight>innerHeight-12)top=r.top-glossPop.offsetHeight-8;
+    glossPop.style.left=left+'px';glossPop.style.top=(top+scrollY)+'px';glossPop.style.visibility='visible';
+  }
+  function hideGloss(){if(glossPop)glossPop.style.display='none';}
+
+  function chainRail(){
+    const rail=document.createElement('div');rail.className='chain-rail';rail.setAttribute('aria-hidden','true');rail.innerHTML='<div class="fill"></div>';
+    document.body.appendChild(rail);const fill=rail.querySelector('.fill');
+    const m1=document.getElementById('m1'),end=document.getElementById('conclusion');
+    function upd(){if(!m1||!end)return;const a=m1.offsetTop,b=end.offsetTop+end.offsetHeight*0.4;
+      const p=clamp((scrollY+innerHeight*0.5-a)/(b-a),0,1);fill.style.height=(p*100)+'%';
+      rail.classList.toggle('show',scrollY>a-innerHeight*0.6);}
+    addEventListener('scroll',upd,{passive:true});addEventListener('resize',upd,{passive:true});upd();
+  }
+
+  var FC={running:false,timer:null};
+  function ensureFCCap(){
+    let c=document.getElementById('fcCap');
+    if(!c){c=document.createElement('div');c.id='fcCap';c.className='fc-cap';c.innerHTML='<span class="fc-txt"></span><button class="fc-x" type="button" aria-label="结束跑预报">✕</button>';
+      document.body.appendChild(c);c.querySelector('.fc-x').addEventListener('click',fcStop);}
+    return c;
+  }
+  function fcStop(){FC.running=false;if(FC.timer){clearTimeout(FC.timer);FC.timer=null;}
+    const c=document.getElementById('fcCap');if(c)c.classList.remove('show');
+    if(riskScale!==1){riskScale=1;try{reRenderRisk();}catch(e){}}
+    const btn=$('#m2Run');if(btn)btn.classList.remove('on');
+  }
+  function runForecast(){
+    if(FC.running){fcStop();return;}
+    FC.running=true;const btn=$('#m2Run');if(btn)btn.classList.add('on');
+    const v=m2Predict();const label=v<33?'小年':v<66?'常年':'大年';
+    const lead=[['苏北大风',34*M2.wind/100],['营养盐',30*M2.nutrient/100],['ENSO',16*M2.enso/100],['降水',12*M2.rain/100]].sort((a,b)=>b[1]-a[1])[0][0];
+    const cap=ensureFCCap();cap.classList.add('show');
+    const steps=[
+      {id:'m1',t:'① 监测：卫星给出初始场。本情景 → 季节峰值'+(v>=66?'更高、登陆更早':v<33?'更低、影响更轻':'接近常态')+'。<span class="shi"></span>',act:function(){M1.t=0.52;updateM1();}},
+      {id:'m2',t:'② 机制：本情景由 <b>'+lead+'</b> 主导 → 情景指数 <b>'+v+'</b>/100，判为 <b>'+label+'</b>。',act:function(){}},
+      {id:'m3',t:'③ 模型：风流×温光营养盐耦合 → 路径·覆盖·生物量'+(v>=66?'偏高':v<33?'偏低':'常态')+'。',act:function(){try{selectNode('out');}catch(e){}}},
+      {id:'m4',t:'④ 风险：与承灾体叠加，按本情景重算四级 → 处置优先级更新。<span class="shi"></span>',act:function(){riskScale=0.72+v/100*0.66;try{reRenderRisk();}catch(e){}}},
+      {id:'conclusion',t:'闭环：你设的情景沿「监测 → 机制 → 模型 → 风险」跑了一遍——这就是「预报链」。',act:function(){}}
+    ];
+    let i=0;
+    (function go(){
+      if(!FC.running)return;
+      if(i>=steps.length){FC.timer=setTimeout(function(){const b=$('#m2Run');if(b)b.classList.remove('on');FC.running=false;},600);return;}
+      const s=steps[i++];const t=document.getElementById(s.id);
+      cap.querySelector('.fc-txt').innerHTML=s.t;
+      if(t)t.scrollIntoView({behavior:RM?'auto':'smooth',block:'start'});
+      try{s.act();}catch(e){}
+      FC.timer=setTimeout(go,RM?1400:4400);
+    })();
+  }
+
   /* ===== init ===== */
   function init(){
     try{buildChain();}catch(e){console.warn('chain',e);}
@@ -1465,6 +1597,9 @@ svg.flowsvg{width:100%;height:auto;display:block;overflow:visible}
     try{buildYearStrip();}catch(e){console.warn('years',e);}
     try{heroBloom();}catch(e){console.warn('herob',e);}
     try{autoTour();}catch(e){console.warn('tour',e);}
+    try{glossInit();}catch(e){console.warn('gloss',e);}
+    try{chainRail();}catch(e){console.warn('rail',e);}
+    try{var _rb=$('#m2Run');if(_rb)_rb.addEventListener('click',runForecast);}catch(e){console.warn('fc',e);}
     // 平滑锚点（避开 sticky 顶栏）
     document.querySelectorAll('a[href^="#"]').forEach(a=>{
       a.addEventListener('click',e=>{const id=a.getAttribute('href');if(id.length<2)return;const t=document.querySelector(id);if(!t)return;e.preventDefault();const off=64;const y=t.getBoundingClientRect().top+scrollY-off;scrollTo({top:y,behavior:RM?'auto':'smooth'});});
