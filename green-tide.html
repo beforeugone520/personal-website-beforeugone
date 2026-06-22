@@ -518,6 +518,31 @@ svg.flowsvg{width:100%;height:auto;display:block;overflow:visible}
 .fc-cap .fc-x{flex:0 0 auto;width:30px;height:30px;border-radius:8px;border:1px solid var(--line);background:none;color:var(--muted);font-size:13px;cursor:pointer}
 .fc-cap .fc-x:hover{color:var(--fg)}
 
+/* ── 内容加分卡：世界最大钩子 / 源头链路 / 治理 / 监测演进 ── */
+.ctx-hook{margin:18px 0 6px;padding:16px 18px;border-radius:14px;background:linear-gradient(125deg,rgba(13,74,122,.42),rgba(31,138,112,.26));border:1px solid var(--line-2)}
+.ctx-hook .ch-big{font-family:var(--hei);font-weight:800;font-size:clamp(18px,5vw,24px);color:var(--ulva-lt);letter-spacing:.02em}
+.ctx-hook .ch-row{display:flex;flex-wrap:wrap;gap:14px 22px;margin:12px 0 10px}
+.ctx-hook .ch-stat{display:flex;flex-direction:column}
+.ctx-hook .ch-stat b{font-family:var(--hei);font-weight:800;font-size:21px;color:var(--fg)}
+.ctx-hook .ch-stat b small{font-size:.55em;color:var(--muted);margin-left:2px;font-weight:700}
+.ctx-hook .ch-stat span{font-size:11px;color:var(--muted);font-family:var(--hei);margin-top:2px}
+.ctx-hook .ch-src{font-size:12px;color:var(--fg-2);line-height:1.6;margin-top:4px}
+.ctx-hook .ch-src b{color:var(--fg)}
+.src-chain{margin-top:20px;padding:16px 16px 14px;border:1px solid var(--line);border-radius:14px;background:var(--card)}
+.src-chain .sc-h{font-family:var(--hei);font-weight:700;font-size:13px;color:var(--fg-2);margin-bottom:12px;display:flex;align-items:center;gap:8px}
+.sc-flow{display:flex;align-items:stretch;gap:6px;overflow-x:auto;padding-bottom:4px;-webkit-overflow-scrolling:touch}
+.sc-node{flex:0 0 auto;min-width:98px;background:color-mix(in srgb,var(--teal) 12%,var(--sea-2));border:1px solid var(--line);border-radius:10px;padding:9px 11px;display:flex;flex-direction:column;gap:3px}
+.sc-node b{font-family:var(--hei);font-weight:700;font-size:12.5px;color:var(--ulva-lt)}
+.sc-node span{font-size:10.5px;color:var(--muted);line-height:1.35}
+.sc-flow i{align-self:center;color:var(--dim);font-style:normal;font-family:var(--mono)}
+.src-chain .sc-src{font-size:11.5px;color:var(--muted);line-height:1.6;margin-top:10px}
+.ctx-card{margin-top:20px;padding:16px 16px 14px;border:1px solid var(--line);border-radius:14px;background:var(--card)}
+.ctx-card .cc-h{font-family:var(--hei);font-weight:700;font-size:13px;color:var(--fg-2);margin-bottom:11px;display:flex;align-items:center;gap:8px}
+.cc-tags{display:flex;flex-wrap:wrap;gap:7px}
+.cc-tags span{font-family:var(--hei);font-size:12px;color:var(--fg-2);border:1px solid var(--line);border-radius:999px;padding:6px 12px;background:color-mix(in srgb,var(--ulva) 8%,transparent)}
+.ctx-card .cc-src{font-size:11.5px;color:var(--muted);line-height:1.6;margin-top:11px}
+.ctx-card .cc-src b{color:var(--fg-2)}
+
 @media (prefers-reduced-motion:reduce){
   *,*::before,*::after{animation-duration:.001ms!important;animation-iteration-count:1!important;transition-duration:.001ms!important;scroll-behavior:auto!important}
 }
@@ -564,6 +589,15 @@ svg.flowsvg{width:100%;height:auto;display:block;overflow:visible}
     <p class="abstract">
       黄海浒苔绿潮是我国近海规模最大的绿潮灾害。本演示以 <b>「监测—机制—模型—风险」</b> 证据链组织：卫星遥感识别绿潮的面积、位置与初始场，揭示其 <em>5 月中下旬暴发、6 月中旬至 7 月上旬达峰、平均持续约 84 d</em> 的季节节律；进而从 ENSO、苏北大风、降水与沿海经济活动解释最大覆盖面积的年际「大小年」；在 <b>LTRANS-GT</b> 耦合模型中，风流为输运因子、温光营养盐为生态因子，共同控制生长与消亡；最终把漂移路径、生物量与致险危险性、承灾体脆弱性耦合为 <b>动态风险等级</b>，服务近岸防灾减灾。
     </p>
+    <div class="ctx-hook">
+      <div class="ch-big">世界最大规模绿潮</div>
+      <div class="ch-row">
+        <div class="ch-stat"><b>&gt;2万<small>km²</small></b><span>年最大分布面积 · 量级</span></div>
+        <div class="ch-stat"><b>~千万吨</b><span>盛期漂浮生物量 · 量级</span></div>
+        <div class="ch-stat"><b>2007<small>起</small></b><span>每年春夏暴发</span></div>
+      </div>
+      <p class="ch-src">黄海浒苔绿潮被学界公认为目前 <b>世界最大规模</b> 的绿潮事件。<span class="shi">量级</span> 面积/生物量各年口径不一，仅作量级参考（综述口径）。</p>
+    </div>
     <div class="chain-flow" id="chainFlow"></div>
   </div>
 </section>
@@ -612,6 +646,24 @@ svg.flowsvg{width:100%;height:auto;display:block;overflow:visible}
 
     <div class="yearbar reveal" id="m1Years" role="group" aria-label="年际差异（实测）"></div>
     <p class="fineprint reveal"><span class="shi"></span> 漂移路径四类、源地位于江苏以东，盛期约 48 d；2014 年覆盖面积达历史极大值。数据：何恩业等, 2021。</p>
+
+    <div class="src-chain reveal">
+      <div class="sc-h">源头链路 · 苏北浅滩紫菜筏架 <span class="shi"></span></div>
+      <div class="sc-flow">
+        <div class="sc-node"><b>紫菜筏架</b><span>附着绿藻</span></div><i>→</i>
+        <div class="sc-node"><b>脱落漂浮</b><span>涨潮入海</span></div><i>→</i>
+        <div class="sc-node"><b>~12 条水道</b><span>北/东筏区 ~82.7%</span></div><i>→</i>
+        <div class="sc-node"><b>强潮流推出</b><span>~0.28 m/s · 4–6 天</span></div><i>→</i>
+        <div class="sc-node"><b>北漂 200+ km</b><span>抵山东沿岸</span></div>
+      </div>
+      <p class="sc-src">源头为苏北浅滩条斑紫菜养殖筏架上的附着绿藻；数字为特定年份/调查的实测（口径与年份不同），非每年定值。</p>
+    </div>
+
+    <div class="ctx-card reveal">
+      <div class="cc-h">监测手段演进 · 看得更全更准</div>
+      <div class="cc-tags"><span>阈值法 (MODIS)</span><span>「天-空-海」多源融合</span><span>深度学习提取</span><span>SAR 全天候（阴雨可探）</span><span>区分浒苔 / 铜藻</span></div>
+      <p class="cc-src">从单一阈值到 AI / SAR 全天候，监测覆盖与精度提升；具体精度为特定模型/数据集结果，标注来源后参考。</p>
+    </div>
   </div>
 </section>
 
@@ -715,6 +767,12 @@ svg.flowsvg{width:100%;height:auto;display:block;overflow:visible}
       <div class="stat"><div class="v">动态</div><div class="l">随漂移持续变化</div></div>
     </div>
     <p class="fineprint reveal"><span class="shi"></span> 以 2021 年 6 月上旬遥感监测为初始场预测漂移，再与承灾体空间叠加。数据：高硕等, 2022。</p>
+
+    <div class="ctx-card reveal">
+      <div class="cc-h">源头治理 + 处置 · 从「打捞」到「治本」</div>
+      <div class="cc-tags"><span>规范养殖 · 压减面积</span><span>筏架提前回收</span><span>覆塑缆绳新材料</span><span>两道拦藻线拦截</span><span>打捞 → 资源化（肥料/饲料/多糖）</span></div>
+      <p class="cc-src">2018 年苏鲁联防联控；2025 年研究确认 <b>「开放海域打捞 + 筏架早期回收」</b> 最有效。2023–2025 近岸上岸量逐年创新低（媒体口径，与卫星分布面积不同口径）。</p>
+    </div>
   </div>
 </section>
 
@@ -747,7 +805,7 @@ svg.flowsvg{width:100%;height:auto;display:block;overflow:visible}
 
     <div class="note-box">
       <div class="nh"><span aria-hidden="true">⚑</span> 数据与红线说明</div>
-      <p><b>真实数值</b>（84 d、盛期 48 d、22.6%、12.3%、r≈0.75、r≈0.62、16–21℃、&gt;26℃、62–94 d、6+14 指标、四级风险标尺等）均引自上述墙报与文献。<br><b>合成 / 示意</b>：黄海底图、绿潮斑块与漂移轨迹、面积单峰曲线、参数→覆盖面积的响应、岸段风险指数（0–10）等标注「<span class="shi"></span>」者均为交互演示，用于呈现机制与趋势，<b>不代表精确观测或预报结果，不杜撰精确数据 / DOI</b>。浒苔学名 <i>Ulva prolifera</i>。</p>
+      <p><b>真实数值</b>（84 d、盛期 48 d、22.6%、12.3%、r≈0.75、r≈0.62、16–21℃、&gt;26℃、62–94 d、6+14 指标、四级风险标尺等）均引自上述墙报与文献。<br><b>合成 / 示意</b>：黄海底图、绿潮斑块与漂移轨迹、面积单峰曲线、参数→覆盖面积的响应、岸段风险指数（0–10）等标注「<span class="shi"></span>」者均为交互演示，用于呈现机制与趋势，<b>不代表精确观测或预报结果，不杜撰精确数据 / DOI</b>。浒苔学名 <i>Ulva prolifera</i>。<br><b>延伸内容</b>（世界最大绿潮 / 源头链路 / 源头治理 / 监测技术演进）引自公开综述与报道，<b>面积、上岸量、生物量分属不同口径不可并列</b>，已就近标注「量级 / 口径」，仅作背景参考。</p>
     </div>
   </div>
 
