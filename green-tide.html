@@ -880,6 +880,8 @@ svg.flowsvg{width:100%;height:auto;display:block;overflow:visible}
   ];
   // 漂移主轴（源区→青岛→半岛前缘）
   const DRIFT=[[121.3,33.2],[121.0,34.1],[120.7,35.0],[120.4,35.8],[120.35,36.05],[121.2,36.7],[122.2,37.2]];
+  // 山东南岸（青岛一带）近岸登陆锚点：盛期靠岸堆积、沿岸摊开（均在海侧，受陆地遮挡裁边）
+  const LANDFALL=[[120.5,35.8],[120.72,35.95],[120.98,36.12],[121.3,36.28]];
 
   function catmull(pts){ // 经过点的平滑路径（仅海岸用）
     const p=pts.map(c=>[px(c[0]),py(c[1])]);
@@ -1034,16 +1036,30 @@ svg.flowsvg{width:100%;height:auto;display:block;overflow:visible}
     ctx.globalCompositeOperation='lighter';
     const BL=11, sp=getBloomSprite();        // 渐变预渲成 sprite，drawImage 复用，省每帧 createRadialGradient
     for(let i=0;i<BL;i++){
-      const spread=(i/(BL-1)-0.5);
-      const along=clamp(centroid + spread*0.30,0,1);
+      const spread=(i/(BL-1)-0.5);                 // 沿漂移主轴拉成条带（苏北→东北）
+      const along=clamp(centroid + spread*0.34,0,1);
       const pos=pointOnDrift(along);
-      const lat=(i*53%37)/37;
-      const ox=(lat-0.5)*30*(0.5+cov), oy=((i*29%23)/23-0.5)*22;
-      const r=(7+ (1-Math.abs(spread))*26)*(0.35+cov*0.9);
+      // 横向抖动改为「垂直主轴」且幅度收小，避免被甩到近岸/上岸
+      const p2=pointOnDrift(clamp(along+0.02,0,1)),p1=pointOnDrift(clamp(along-0.02,0,1));
+      let dx=p2[0]-p1[0],dy=p2[1]-p1[1];const dl=Math.hypot(dx,dy)||1;
+      const jit=((i*53%37)/37-0.5)*15*(0.6+cov*0.5);
+      const ox=(-dy/dl)*jit, oy=(dx/dl)*jit;
+      const r=(7+(1-Math.abs(spread))*24)*(0.35+cov*0.9);
       const a=cov*(0.5-Math.abs(spread)*0.5)*0.9;
       if(a<=0.01||r<=0)continue;
       const gx=pos[0]+ox,gy=pos[1]+oy;
       ctx.globalAlpha=a;ctx.drawImage(sp,gx-r,gy-r,r*2,r*2);
+    }
+    // 盛期靠岸：向山东沿岸（青岛一带）登陆、沿岸摊开（越界部分由陆地遮挡）
+    const landfall=smooth(0.45,0.78,centroid)*cov;
+    if(landfall>0.03){
+      for(let k=0;k<LANDFALL.length;k++){
+        const cx=px(LANDFALL[k][0]),cy=py(LANDFALL[k][1]);
+        const rr=(11+(k===0?5:0))*(0.55+landfall);
+        const aa=landfall*(0.6-k*0.07);
+        if(aa<=0.01)continue;
+        ctx.globalAlpha=aa;ctx.drawImage(sp,cx-rr,cy-rr,rr*2,rr*2);
+      }
     }
     ctx.globalAlpha=1;
     // 漂移粒子（随运动）
