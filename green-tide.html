@@ -543,6 +543,32 @@ svg.flowsvg{width:100%;height:auto;display:block;overflow:visible}
 .ctx-card .cc-src{font-size:11.5px;color:var(--muted);line-height:1.6;margin-top:11px}
 .ctx-card .cc-src b{color:var(--fg-2)}
 
+/* ── 动态化：模块4 季节联动 / 卫星前后对比 ── */
+.m4-season{margin-top:16px;padding:14px 16px;border:1px solid var(--line);border-radius:12px;background:var(--card)}
+.m4s-top{display:flex;justify-content:space-between;align-items:baseline;gap:10px;margin-bottom:8px}
+.m4s-lab{font-family:var(--hei);font-weight:700;font-size:13px;color:var(--fg-2);display:flex;align-items:center;gap:8px}
+.m4s-read{font-family:var(--mono);font-size:12.5px;color:var(--amber);font-weight:600}
+.m4-season input[type=range]{-webkit-appearance:none;appearance:none;width:100%;height:36px;background:transparent;cursor:pointer;margin:0}
+.m4-season input[type=range]::-webkit-slider-runnable-track{height:7px;border-radius:7px;background:linear-gradient(90deg,var(--amber) var(--p,52%),rgba(150,200,222,.16) var(--p,52%))}
+.m4-season input[type=range]::-moz-range-track{height:7px;border-radius:7px;background:rgba(150,200,222,.16)}
+.m4-season input[type=range]::-moz-range-progress{height:7px;border-radius:7px;background:var(--amber)}
+.m4-season input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;appearance:none;width:24px;height:24px;margin-top:-8.5px;border-radius:999px;background:#eaf3f7;border:3px solid var(--amber);box-shadow:0 3px 10px rgba(0,0,0,.5)}
+.m4-season input[type=range]::-moz-range-thumb{width:22px;height:22px;border-radius:999px;background:#eaf3f7;border:3px solid var(--amber)}
+.m4s-ends{display:flex;justify-content:space-between;font-family:var(--mono);font-size:10px;color:var(--dim);margin-top:2px}
+.ba{margin-top:20px}
+.ba .ba-h{font-family:var(--hei);font-weight:700;font-size:13px;color:var(--fg-2);margin-bottom:10px;display:flex;align-items:center;gap:8px}
+.ba-stage{position:relative;height:180px;border-radius:12px;overflow:hidden;border:1px solid var(--line);--x:50%;cursor:ew-resize;touch-action:none;user-select:none;-webkit-user-select:none}
+.ba-after,.ba-before{position:absolute;inset:0}
+.ba-after{background:linear-gradient(160deg,#0a2f50,#04203f)}
+.ba-after::after{content:'';position:absolute;inset:0;mix-blend-mode:screen;opacity:.92;background:radial-gradient(closest-side at 40% 64%,rgba(122,216,79,.9),transparent 70%),radial-gradient(closest-side at 54% 44%,rgba(79,157,58,.78),transparent 70%),radial-gradient(closest-side at 30% 32%,rgba(226,90,40,.5),transparent 66%),radial-gradient(closest-side at 66% 70%,rgba(160,230,90,.6),transparent 70%)}
+.ba-before{background:linear-gradient(160deg,#1a4e76,#0c3457);clip-path:inset(0 calc(100% - var(--x)) 0 0)}
+.ba-before::after{content:'';position:absolute;inset:0;opacity:.4;background:radial-gradient(closest-side at 40% 64%,rgba(150,170,150,.22),transparent 70%),radial-gradient(closest-side at 54% 44%,rgba(150,170,150,.16),transparent 70%)}
+.ba-handle{position:absolute;top:0;bottom:0;left:var(--x);width:2px;background:#eaf3f7;transform:translateX(-1px);pointer-events:none}
+.ba-handle span{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:30px;height:30px;border-radius:999px;background:#eaf3f7;color:#0a2f50;display:grid;place-items:center;font-size:13px;box-shadow:0 3px 12px rgba(0,0,0,.5)}
+.ba-l{position:absolute;bottom:8px;font-family:var(--mono);font-size:10.5px;color:#eaf3f7;background:rgba(3,18,42,.6);padding:2px 7px;border-radius:6px;pointer-events:none}
+.ba-l1{left:8px}.ba-l2{right:8px}
+.ba .ba-src{font-size:11.5px;color:var(--muted);line-height:1.6;margin-top:10px}
+
 @media (prefers-reduced-motion:reduce){
   *,*::before,*::after{animation-duration:.001ms!important;animation-iteration-count:1!important;transition-duration:.001ms!important;scroll-behavior:auto!important}
 }
@@ -646,6 +672,18 @@ svg.flowsvg{width:100%;height:auto;display:block;overflow:visible}
 
     <div class="yearbar reveal" id="m1Years" role="group" aria-label="年际差异（实测）"></div>
     <p class="fineprint reveal"><span class="shi"></span> 漂移路径四类、源地位于江苏以东，盛期约 48 d；2014 年覆盖面积达历史极大值。数据：何恩业等, 2021。</p>
+
+    <div class="ba reveal" id="m1BA">
+      <div class="ba-h">卫星视图 · 真彩 ↔ 假彩（绿潮高亮）<span class="shi"></span></div>
+      <div class="ba-stage" id="baStage">
+        <div class="ba-after"></div>
+        <div class="ba-before"></div>
+        <div class="ba-handle" id="baHandle"><span aria-hidden="true">⇆</span></div>
+        <span class="ba-l ba-l1">真彩</span>
+        <span class="ba-l ba-l2">假彩 · 绿潮高亮</span>
+      </div>
+      <p class="ba-src">遥感常用红边 / NDVI 假彩把绿潮从海面「点亮」。此处为示意合成，非真实卫星影像。</p>
+    </div>
 
     <div class="src-chain reveal">
       <div class="sc-h">源头链路 · 苏北浅滩紫菜筏架 <span class="shi"></span></div>
@@ -754,6 +792,12 @@ svg.flowsvg{width:100%;height:auto;display:block;overflow:visible}
     <div class="map-stage risk-stage reveal" id="m4Map" style="margin-top:22px">
       <div class="map-tag"><span class="shi">风险图 · 致险×脆弱</span></div>
     </div>
+    <div class="m4-season reveal">
+      <div class="m4s-top"><span class="m4s-lab">季节联动 · 拖看动态风险 <span class="shi"></span></span><span class="m4s-read mono" id="m4SeasonRead">6月下旬 · 盛期</span></div>
+      <input type="range" id="m4Season" min="0" max="105" value="55" aria-label="季节月份，联动各岸段风险高低">
+      <div class="m4s-ends"><span>5月</span><span>6月</span><span>7月</span><span>8月</span></div>
+    </div>
+
     <div class="risk-segs-list reveal" id="m4List" role="group" aria-label="岸段选择"></div>
 
     <div class="panel reveal risk-detail" id="m4Detail"></div>
@@ -1061,6 +1105,16 @@ svg.flowsvg{width:100%;height:auto;display:block;overflow:visible}
     for(let i=0;i<=120;i++){const t=i/120;const x=PAD+t*w;const y=top+h-coverage(t)*h*0.96;dl+=(i?'L':'M')+x.toFixed(1)+','+y.toFixed(1);da+='L'+x.toFixed(1)+','+y.toFixed(1);}
     da+='L'+(PAD+w)+','+(top+h)+'Z';
     el('path',{class:'area',d:da},svg);
+    // 不确定性扇面（示意）：随季节推进变宽，体现「预报」而非「展示」
+    const ups=[],los=[];
+    for(let i=0;i<=120;i++){const tt=i/120,x=PAD+tt*w,cy=top+h-coverage(tt)*h*0.96,hw=(0.05+0.15*smooth(0.25,1,tt))*h;
+      ups.push([x,clamp(cy-hw,top-2,top+h)]);los.push([x,clamp(cy+hw,top,top+h)]);}
+    let fan='M'+ups[0][0].toFixed(1)+','+ups[0][1].toFixed(1);
+    for(let i=1;i<ups.length;i++)fan+='L'+ups[i][0].toFixed(1)+','+ups[i][1].toFixed(1);
+    for(let i=los.length-1;i>=0;i--)fan+='L'+los[i][0].toFixed(1)+','+los[i][1].toFixed(1);
+    fan+='Z';
+    el('path',{d:fan,fill:'rgba(226,154,43,.13)',stroke:'none'},svg);
+    el('text',{x:PAD+w,y:top+8,'text-anchor':'end','font-size':8,fill:'rgba(226,154,43,.85)','font-family':'var(--mono)'},svg).textContent='不确定带·示意';
     el('path',{class:'line',d:dl},svg);
     el('line',{class:'axis',x1:PAD,y1:top+h,x2:PAD+w,y2:top+h},svg);
     // 月份刻度
@@ -1614,7 +1668,9 @@ svg.flowsvg{width:100%;height:auto;display:block;overflow:visible}
   }
   function fcStop(){FC.running=false;if(FC.timer){clearTimeout(FC.timer);FC.timer=null;}
     const c=document.getElementById('fcCap');if(c)c.classList.remove('show');
-    if(riskScale!==1){riskScale=1;try{reRenderRisk();}catch(e){}}
+    const ss=$('#m4Season');                 // 回到季节滑条对应的风险态，保持两控件一致
+    if(ss){try{ss.dispatchEvent(new Event('input'));}catch(e){}}
+    else if(riskScale!==1){riskScale=1;try{reRenderRisk();}catch(e){}}
     const btn=$('#m2Run');if(btn)btn.classList.remove('on');
   }
   function runForecast(){
@@ -1633,13 +1689,36 @@ svg.flowsvg{width:100%;height:auto;display:block;overflow:visible}
     let i=0;
     (function go(){
       if(!FC.running)return;
-      if(i>=steps.length){FC.timer=setTimeout(function(){const b=$('#m2Run');if(b)b.classList.remove('on');FC.running=false;},600);return;}
+      if(i>=steps.length){FC.running=false;const b=$('#m2Run');if(b)b.classList.remove('on');
+        FC.timer=setTimeout(function(){const c=document.getElementById('fcCap');if(c)c.classList.remove('show');const ss=$('#m4Season');if(ss){try{ss.dispatchEvent(new Event('input'));}catch(_e){}}},1600);return;}
       const s=steps[i++];const t=document.getElementById(s.id);
       cap.querySelector('.fc-txt').innerHTML=s.t;
       if(t)t.scrollIntoView({behavior:RM?'auto':'smooth',block:'start'});
       try{s.act();}catch(e){}
       FC.timer=setTimeout(go,RM?1400:4400);
     })();
+  }
+
+  /* 首尾咬合：模块4 季节联动动态风险 */
+  function bindM4Season(){
+    const inp=$('#m4Season');if(!inp)return;const read=$('#m4SeasonRead');
+    function sync(){
+      const t=(+inp.value)/SEASON_DAYS,dt=dateFromT(t),st=stageOf(t);
+      if(read)read.textContent=dt.m+'月'+dt.d+'日 · '+st.n.split(' ')[0];
+      riskScale=0.45+coverage(t)*0.55;try{reRenderRisk();}catch(e){}
+      inp.style.setProperty('--p',((+inp.value)/SEASON_DAYS*100)+'%');
+    }
+    inp.addEventListener('input',sync);sync();
+  }
+  /* 卫星真彩 ↔ 假彩（绿潮高亮）前后对比 */
+  function bindBA(){
+    const stage=$('#baStage');if(!stage)return;
+    function setX(clientX){const r=stage.getBoundingClientRect();const x=clamp((clientX-r.left)/r.width,0.04,0.96);stage.style.setProperty('--x',(x*100)+'%');}
+    let drag=false;
+    stage.addEventListener('pointerdown',e=>{drag=true;try{stage.setPointerCapture(e.pointerId);}catch(_){}setX(e.clientX);e.preventDefault();});
+    stage.addEventListener('pointermove',e=>{if(drag)setX(e.clientX);});
+    stage.addEventListener('pointerup',()=>{drag=false;});stage.addEventListener('pointercancel',()=>{drag=false;});
+    stage.style.setProperty('--x','50%');
   }
 
   /* ===== init ===== */
@@ -1658,6 +1737,8 @@ svg.flowsvg{width:100%;height:auto;display:block;overflow:visible}
     try{glossInit();}catch(e){console.warn('gloss',e);}
     try{chainRail();}catch(e){console.warn('rail',e);}
     try{var _rb=$('#m2Run');if(_rb)_rb.addEventListener('click',runForecast);}catch(e){console.warn('fc',e);}
+    try{bindM4Season();}catch(e){console.warn('m4s',e);}
+    try{bindBA();}catch(e){console.warn('ba',e);}
     // 平滑锚点（避开 sticky 顶栏）
     document.querySelectorAll('a[href^="#"]').forEach(a=>{
       a.addEventListener('click',e=>{const id=a.getAttribute('href');if(id.length<2)return;const t=document.querySelector(id);if(!t)return;e.preventDefault();const off=64;const y=t.getBoundingClientRect().top+scrollY-off;scrollTo({top:y,behavior:RM?'auto':'smooth'});});
