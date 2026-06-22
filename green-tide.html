@@ -34,7 +34,7 @@
   --fg:#eaf3f7;
   --fg-2:#bcd6e2;
   --muted:#86abbd;
-  --dim:#7c9eb0;
+  --dim:#8fb0c2;
   --line:rgba(150,200,222,.16);
   --line-2:rgba(150,200,222,.28);
   --glass:rgba(7,30,58,.62);
@@ -460,9 +460,16 @@ svg.flowsvg{width:100%;height:auto;display:block;overflow:visible}
 .contrib .leg i{width:9px;height:9px;border-radius:2px}
 .flow-detail{transition:opacity .18s var(--ease)}
 .flow-detail.swap{opacity:0}
+/* 焦点可见：SVG 可聚焦元素用描边代替不渲染的 outline */
+.fnode:focus-visible rect{stroke:#7ad84f;stroke-width:2.4}
+.risk-seg:focus-visible circle:first-of-type{stroke:#7ad84f;stroke-width:2}
+.ys-bar:focus-visible rect:first-of-type{stroke:#7ad84f;stroke-width:1.8}
+.fnode:focus,.risk-seg:focus,.ys-bar:focus{outline:none}
 @media (prefers-reduced-motion:no-preference){
   .risk-seg.active circle.halo{animation:halo 1.9s ease-in-out infinite}
   @keyframes halo{0%,100%{opacity:.16}50%{opacity:.42}}
+  .track .thumb.pulse{animation:thumbpulse 1.15s ease-out 2}
+  @keyframes thumbpulse{0%,100%{box-shadow:0 4px 14px rgba(0,0,0,.5),0 0 0 6px rgba(79,157,58,.16)}50%{box-shadow:0 4px 14px rgba(0,0,0,.5),0 0 0 13px rgba(79,157,58,.34)}}
 }
 /* ── 堆料：洋流流场 / 卫星扫描线 / Hero 活体绿潮 / 年际条 / 自动巡览 ── */
 .map-stage canvas.flow{position:absolute;inset:0;width:100%;height:100%;pointer-events:none;z-index:0}
@@ -573,8 +580,8 @@ svg.flowsvg{width:100%;height:auto;display:block;overflow:visible}
     </div>
 
     <div class="curve-wrap reveal">
-      <div class="ttl">覆盖面积 · 单峰季节曲线 <span class="shi">相对值</span></div>
-      <svg class="curve" id="m1Curve" viewBox="0 0 360 150" preserveAspectRatio="none" aria-label="覆盖面积随时间的单峰曲线（示意）"></svg>
+      <div class="ttl">覆盖面积（相对 · 峰=100%）· 单峰季节曲线 <span class="shi">相对值</span></div>
+      <svg class="curve" id="m1Curve" viewBox="0 0 360 150" aria-label="覆盖面积随时间的单峰曲线（相对值，峰为100%，示意）"></svg>
     </div>
 
     <div class="stat-row reveal" style="--cc:#37b6ce">
@@ -603,12 +610,13 @@ svg.flowsvg{width:100%;height:auto;display:block;overflow:visible}
     </div>
 
     <div class="panel reveal gauge-box" style="margin-top:16px">
-      <div class="glbl">预测最大覆盖面积 · 相对指数 <span class="shi"></span></div>
+      <div class="glbl">情景指数 · 相对趋势 <span class="shi"></span></div>
       <div class="gval" id="m2Gval">52<small>/100</small></div>
       <div class="gbar"><div class="gf" id="m2Gbar"></div><div class="seg" style="left:33%"></div><div class="seg" style="left:66%"></div></div>
       <span class="gtag" id="m2Gtag">常年</span>
       <p class="gnote" id="m2Gnote"></p>
       <div class="contrib" id="m2Contrib"></div>
+      <p style="font-size:11.5px;color:var(--muted);margin-top:12px;line-height:1.6;font-family:var(--song)">因子间存在相关与非线性，此处为各因子线性叠加的<b style="color:var(--fg-2)">教学示意</b>，用于演示「谁把面积推上去」，并非真实预报。</p>
       <button class="btn-reset" id="m2Reset">复位到常年</button>
     </div>
 
@@ -911,6 +919,14 @@ svg.flowsvg{width:100%;height:auto;display:block;overflow:visible}
   }
   // 漂移粒子
   const PARTS=[];for(let i=0;i<46;i++)PARTS.push({u:Math.random(),off:(Math.random()-.5)*26,sp:0.0006+Math.random()*0.0012,a:Math.random()});
+  var bloomSprite=null;
+  function getBloomSprite(){
+    if(bloomSprite)return bloomSprite;
+    const S=128;bloomSprite=document.createElement('canvas');bloomSprite.width=S;bloomSprite.height=S;
+    const c=bloomSprite.getContext('2d');const g=c.createRadialGradient(S/2,S/2,0,S/2,S/2,S/2);
+    g.addColorStop(0,'rgba(160,230,90,1)');g.addColorStop(0.45,'rgba(79,157,58,0.7)');g.addColorStop(1,'rgba(31,138,112,0)');
+    c.fillStyle=g;c.fillRect(0,0,S,S);return bloomSprite;
+  }
   function drawBloom(){
     const ctx=M1.ctx;if(!ctx)return;const t=M1.t,cov=coverage(t);
     ctx.clearRect(0,0,M1.cv.width,M1.cv.height);
@@ -918,23 +934,20 @@ svg.flowsvg{width:100%;height:auto;display:block;overflow:visible}
     // bloom 中心沿漂移轴推进
     const centroid=smooth(0.10,0.92,t); // 0→1 along path
     ctx.globalCompositeOperation='lighter';
-    const BL=11;
+    const BL=11, sp=getBloomSprite();        // 渐变预渲成 sprite，drawImage 复用，省每帧 createRadialGradient
     for(let i=0;i<BL;i++){
-      const spread=(i/(BL-1)-0.5);          // -0.5..0.5
+      const spread=(i/(BL-1)-0.5);
       const along=clamp(centroid + spread*0.30,0,1);
       const pos=pointOnDrift(along);
-      const lat=(i*53%37)/37; // 伪随机横向抖动
+      const lat=(i*53%37)/37;
       const ox=(lat-0.5)*30*(0.5+cov), oy=((i*29%23)/23-0.5)*22;
       const r=(7+ (1-Math.abs(spread))*26)*(0.35+cov*0.9);
       const a=cov*(0.5-Math.abs(spread)*0.5)*0.9;
       if(a<=0.01||r<=0)continue;
       const gx=pos[0]+ox,gy=pos[1]+oy;
-      const grd=ctx.createRadialGradient(gx,gy,0,gx,gy,r);
-      grd.addColorStop(0,'rgba(160,230,90,'+(a).toFixed(3)+')');
-      grd.addColorStop(0.45,'rgba(79,157,58,'+(a*0.7).toFixed(3)+')');
-      grd.addColorStop(1,'rgba(31,138,112,0)');
-      ctx.fillStyle=grd;ctx.beginPath();ctx.arc(gx,gy,r,0,6.2832);ctx.fill();
+      ctx.globalAlpha=a;ctx.drawImage(sp,gx-r,gy-r,r*2,r*2);
     }
+    ctx.globalAlpha=1;
     // 漂移粒子（随运动）
     if(cov>0.05){
       ctx.globalCompositeOperation='lighter';
@@ -976,6 +989,13 @@ svg.flowsvg{width:100%;height:auto;display:block;overflow:visible}
       const x=PAD+m[0]*w;el('line',{class:'axis',x1:x,y1:top+h,x2:x,y2:top+h+4},svg);
       el('text',{class:'axlbl',x:x,y:top+h+14,'text-anchor':'start'},svg).textContent=m[1];
     });
+    // Y 轴：相对覆盖 0→100%（峰=100%，示意）
+    el('line',{class:'axis',x1:PAD,y1:top,x2:PAD,y2:top+h},svg);
+    [[0.02,'100%'],[0.5,'50'],[1,'0']].forEach(yt=>{
+      const y=top+yt[0]*h;
+      if(yt[0]===0.5)el('line',{x1:PAD,y1:y,x2:PAD+w,y2:y,stroke:'rgba(150,200,222,.10)','stroke-width':1,'stroke-dasharray':'2 4'},svg);
+      el('text',{class:'axlbl',x:PAD-3,y:y+3,'text-anchor':'end'},svg).textContent=yt[1];
+    });
     // 峰值与速率标注（把 22.6%/12.3% 与曲线形状绑定）
     const pkx=PAD+PEAK_T*w;
     el('line',{x1:pkx,y1:top+4,x2:pkx,y2:top+h,stroke:'rgba(255,255,255,.30)','stroke-width':1,'stroke-dasharray':'2 3'},svg);
@@ -1016,10 +1036,10 @@ svg.flowsvg{width:100%;height:auto;display:block;overflow:visible}
   // 拖动（指针事件，touch+mouse）
   function bindTrack(){
     const tr=$('#m1Track');
-    function setFromX(clientX){const r=tr.getBoundingClientRect();M1.t=clamp((clientX-r.left)/r.width,0,1);updateM1();}
-    let dragging=false;
-    tr.addEventListener('pointerdown',e=>{dragging=true;tr.classList.add('grab');try{tr.setPointerCapture(e.pointerId);}catch(_){}setPlay(false);setFromX(e.clientX);e.preventDefault();});
-    tr.addEventListener('pointermove',e=>{if(dragging)setFromX(e.clientX);});
+    function tAt(clientX){const r=tr.getBoundingClientRect();return clamp((clientX-r.left)/r.width,0,1);}
+    let dragging=false,dragOff=0;
+    tr.addEventListener('pointerdown',e=>{dragging=true;tr.classList.add('grab');try{tr.setPointerCapture(e.pointerId);}catch(_){}setPlay(false);const tf=tAt(e.clientX);dragOff=Math.abs(tf-M1.t)<0.05?(M1.t-tf):0;M1.t=clamp(tf+dragOff,0,1);updateM1();e.preventDefault();});
+    tr.addEventListener('pointermove',e=>{if(dragging){M1.t=clamp(tAt(e.clientX)+dragOff,0,1);updateM1();}});
     tr.addEventListener('pointerup',e=>{dragging=false;tr.classList.remove('grab');});
     tr.addEventListener('pointercancel',()=>{dragging=false;tr.classList.remove('grab');});
     tr.addEventListener('keydown',e=>{const step=1/SEASON_DAYS;if(e.key==='ArrowRight'||e.key==='ArrowUp'){M1.t=clamp(M1.t+step,0,1);updateM1();e.preventDefault();}else if(e.key==='ArrowLeft'||e.key==='ArrowDown'){M1.t=clamp(M1.t-step,0,1);updateM1();e.preventDefault();}else if(e.key==='Home'){M1.t=0;updateM1();}else if(e.key==='End'){M1.t=1;updateM1();}});
@@ -1271,7 +1291,7 @@ svg.flowsvg{width:100%;height:auto;display:block;overflow:visible}
           if(e.isIntersecting){
             const k=e.target.id;const ci=idxOf(k);
             dots.forEach((d,di)=>{if(di===ci)d.setAttribute('aria-current','true');else d.removeAttribute('aria-current');d.classList.toggle('done',di<ci);});
-            if(k==='m1'){M1.inView=true;if(M1.playing&&!M1.raf)M1.raf=requestAnimationFrame(m1Loop);}
+            if(k==='m1'){M1.inView=true;if(M1.playing&&!M1.raf)M1.raf=requestAnimationFrame(m1Loop);if(!M1.pulsed){M1.pulsed=true;var _th=$('#m1Thumb');if(_th&&!RM){_th.classList.add('pulse');setTimeout(function(){_th.classList.remove('pulse');},2700);}}}
           } else if(e.target.id==='m1'){M1.inView=false;if(M1.raf){cancelAnimationFrame(M1.raf);M1.raf=null;}}
         });
       },{rootMargin:'-45% 0px -45% 0px'});
@@ -1287,22 +1307,22 @@ svg.flowsvg{width:100%;height:auto;display:block;overflow:visible}
 
   /* ===== 背景海流粒子 ===== */
   function oceanBG(){
-    const cv=$('#ocean-bg');if(!cv)return;const ctx=cv.getContext('2d');let w,h,dpr,ps=[],raf=null,vis=true;
-    function size(){dpr=Math.min(devicePixelRatio||1,2);w=cv.width=innerWidth*dpr;h=cv.height=innerHeight*dpr;}
+    const cv=$('#ocean-bg');if(!cv)return;const ctx=cv.getContext('2d');let w,h,dpr,ps=[],raf=null,vis=true,lastT=0;
+    function size(){dpr=Math.min(devicePixelRatio||1,1.75);w=cv.width=innerWidth*dpr;h=cv.height=innerHeight*dpr;}
     size();
-    const N=RM?40:80;for(let i=0;i<N;i++)ps.push({x:Math.random()*w,y:Math.random()*h,v:(0.15+Math.random()*0.4)*dpr,r:(0.4+Math.random()*1.1)*dpr,a:0.1+Math.random()*0.35});
-    function draw(){
+    const N=RM?38:56;for(let i=0;i<N;i++)ps.push({x:Math.random()*w,y:Math.random()*h,v:(0.15+Math.random()*0.4)*dpr,r:(0.4+Math.random()*1.1)*dpr,a:0.1+Math.random()*0.35});
+    function render(){
       ctx.clearRect(0,0,w,h);
       for(const p of ps){
         ctx.beginPath();ctx.arc(p.x,p.y,p.r,0,6.2832);
         ctx.fillStyle='rgba(140,200,180,'+p.a.toFixed(2)+')';ctx.fill();
         if(!RM){p.x+=p.v*0.5;p.y-=p.v;if(p.y<-4){p.y=h+4;p.x=Math.random()*w;}if(p.x>w+4)p.x=-4;}
       }
-      if(!RM&&vis){raf=requestAnimationFrame(draw);}else{raf=null;}
     }
-    addEventListener('resize',()=>{size();if(RM)draw();},{passive:true});
-    document.addEventListener('visibilitychange',()=>{vis=!document.hidden;if(vis&&!RM&&!raf){raf=requestAnimationFrame(draw);}});
-    draw();
+    function loop(ts){if(RM||!vis){raf=null;return;}if(ts-lastT>=33){render();lastT=ts;}raf=requestAnimationFrame(loop);} // ~30fps 节流
+    addEventListener('resize',()=>{size();render();},{passive:true});
+    document.addEventListener('visibilitychange',()=>{vis=!document.hidden;if(vis&&!RM&&!raf)raf=requestAnimationFrame(loop);});
+    render(); if(!RM)raf=requestAnimationFrame(loop);
   }
 
   /* ===== 堆料A：洋流粒子流场（earth.nullschool 风，置于海图下层；海面透明处显现、陆地遮挡）===== */
@@ -1326,7 +1346,7 @@ svg.flowsvg{width:100%;height:auto;display:block;overflow:visible}
       }
     }
     function drawStatic(){ctx.clearRect(0,0,cv.width,cv.height);ctx.globalCompositeOperation='lighter';ctx.lineCap='round';ctx.lineWidth=1.1*sx;for(const p of P){const v=vel(p.x,p.y);ctx.strokeStyle='rgba(120,214,200,0.10)';ctx.beginPath();ctx.moveTo(p.x*sx,p.y*sy);ctx.lineTo((p.x+v[0]*9)*sx,(p.y+v[1]*9)*sy);ctx.stroke();}}
-    function loop(){if(!vis||RM){raf=null;return;}step();raf=requestAnimationFrame(loop);}
+    var lastT=0;function loop(ts){if(!vis||RM){raf=null;return;}if(ts-lastT>=33){step();lastT=ts;}raf=requestAnimationFrame(loop);} // ~30fps 节流
     size();
     if('ResizeObserver'in window)new ResizeObserver(size).observe(host);
     if('IntersectionObserver'in window){new IntersectionObserver(es=>{vis=es[0].isIntersecting;if(vis&&!RM&&!raf)raf=requestAnimationFrame(loop);else if(!vis&&raf){cancelAnimationFrame(raf);raf=null;}},{threshold:0}).observe(host);}
