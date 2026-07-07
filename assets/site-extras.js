@@ -71,10 +71,10 @@
         ['help', '这份帮助'], ['work', '作品一览'], ['blog / writing', '写作'], ['stack', '技术栈'], ['contact', '联系方式'],
         ['gt / 绿潮', '黄海浒苔绿潮交互演示'], ['repos', 'GitHub 实时仓库'], ['github', '打开 GitHub 主页'],
         ['email', '复制邮箱'], ['wechat', '复制微信号'], ['theme [light|dark|system]', '切换主题'],
-        ['vibe', '???'], ['clear', '清屏'], ['exit', '关闭终端']
+        ['egg', '???'], ['clear', '清屏'], ['exit', '关闭终端']
       ].map(function (c) { return '<span class="t-cmd">' + c[0] + '</span><span class="t-dim">' + c[1] + '</span>'; }).join('') + '</div>');
     },
-    whoami: function () { print('Bruce · 跨专业、非科班的 vibe coder。用 AI 把想法做出来，再回头把原理啃下来。' + greeting() + '。'); },
+    whoami: function () { print('Bruce · 跨专业写代码。用 AI 把想法做出来，再回头把原理啃下来。' + greeting() + '。'); },
     work: function () { goSection('work', '作品'); }, projects: function () { goSection('work', '作品'); },
     blog: function () { print('↳ 前往写作…'); location.href = 'blog.html'; }, writing: function () { CMDS.blog(); },
     stack: function () { goSection('stack', '工具栈'); },
@@ -96,7 +96,7 @@
     date: function () { print(new Date().toLocaleString('zh-CN')); },
     echo: function (a) { print(esc(a || '')); },
     ls: function () { print('work  writing  stack  contact  green-tide'); },
-    vibe: function () { konami(); print('✨ vibe mode!'); },
+    egg: function () { konami(); print('✨ 彩蛋！'); },
     sudo: function () { print('Nice try 😏 在这儿你早就是 root 了。', 't-dim'); },
     clear: function () { body.innerHTML = ''; },
     exit: function () { closeTerm(); }, close: function () { closeTerm(); }, q: function () { closeTerm(); }
@@ -167,7 +167,7 @@
   var KSEQ = [38, 38, 40, 40, 37, 39, 37, 39, 66, 65], kpos = 0;
   function konami() {
     var host = h('div', 'egg'); document.body.appendChild(host);
-    var pool = ['ship', 'vibe', '</>', '{}', 'npm', 'git push', '0x1F', '✦', '先做出来', 'AI', 'run', 'build'];
+    var pool = ['ship', 'dev', '</>', '{}', 'npm', 'git push', '0x1F', '✦', '先做出来', 'AI', 'run', 'build'];
     var n = RM ? 0 : 40;
     for (var i = 0; i < n; i++) {
       var s = h('span', 'egg-bit', pool[(Math.random() * pool.length) | 0]);
@@ -176,7 +176,7 @@
       s.style.animationDuration = (2 + Math.random() * 2.2).toFixed(2) + 's';
       host.appendChild(s);
     }
-    var toast = h('div', 'egg-toast', '🎉 vibe mode — 先做出来，再啃原理'); document.body.appendChild(toast);
+    var toast = h('div', 'egg-toast', '🎉 先做出来，再啃原理'); document.body.appendChild(toast);
     setTimeout(function () { toast.classList.add('out'); }, RM ? 1200 : 2200);
     setTimeout(function () { if (host.parentNode) host.remove(); if (toast.parentNode) toast.remove(); }, RM ? 1800 : 4200);
   }

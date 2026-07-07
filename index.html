@@ -67,7 +67,7 @@
         <path d="M6 14 C 56 3, 92 21, 132 12 S 214 2, 256 14 S 350 22, 392 9 S 446 6, 454 13" pathLength="720" stroke="currentColor" stroke-width="5" stroke-linecap="round"></path>
       </svg>
       <h1>用 AI 把想法做出来，再回头把原理啃下来。</h1>
-      <p class="lead">我是跨专业、非科班的 vibe coder。代码大多由 AI 写就，我负责把想法推到能跑、能上架，再一行行读懂它。</p>
+      <p class="lead">我跨专业写代码。大部分代码由 AI 写成，我负责把想法推到能跑、能上架，再一行行读懂它。</p>
       <div class="hero-cta">
         <a class="btn btn-primary" href="blog.html">读我的写作</a>
         <a class="btn btn-secondary btn-arrow" href="#work">看看作品</a>
@@ -227,7 +227,7 @@
           </div>
           <div>
             <h3>开张：为什么我决定开始写</h3>
-            <p>一个能用 AI 出活的 vibe coder，为什么要写博客？第一篇，也是写给自己的说明书。</p>
+            <p>平时靠 AI 写代码的人，为什么要写博客？第一篇，也是写给自己的说明书。</p>
           </div>
           <span class="pull num meta">2026-06-15</span>
         </a>
@@ -264,7 +264,7 @@
             <tr><td>HarmonyOS · ArkTS / ArkUI</td></tr>
             <tr><td>C / C++ · 终端渲染 <span class="meta">libghostty / XComponent</span></td></tr>
             <tr><td>React / Vite</td></tr>
-            <tr><td>AI · Vibe Coding</td></tr>
+            <tr><td>AI · 辅助开发</td></tr>
           </tbody>
         </table>
       </div>
@@ -274,7 +274,7 @@
   <!-- CONTACT -->
   <section class="section contact" id="contact" data-od-id="contact">
     <div class="container" style="max-width:640px;">
-      <h2>想聊聊 vibe coding，或者看我怎么把想法做出来？</h2>
+      <h2>想聊聊用 AI 写代码，或者看我怎么把想法做出来？</h2>
       <p class="lead" style="margin:16px auto 0; text-align:center;">（其实我是社恐来着)</p>
       <div class="social">
         <a href="https://github.com/beforeugone520" target="_blank" rel="noopener">
@@ -415,7 +415,7 @@
   (function () {
     var host = document.getElementById('heroGlyphs');
     if (!host) return;
-    var pool = ['const','let','=>','async','await','npm','git','vibe','ship','{}','()','0x1F','AI','RN','fn','01','··','//','return','&&','??','tsx','jsx','ark','node','build','run','npx',':=','...'];
+    var pool = ['const','let','=>','async','await','npm','git','dev','ship','{}','()','0x1F','AI','RN','fn','01','··','//','return','&&','??','tsx','jsx','ark','node','build','run','npx',':=','...'];
     var html = '';
     for (var i = 0; i < 320; i++) {
       var t = pool[(Math.random() * pool.length) | 0];
@@ -460,7 +460,7 @@
       const hero = document.querySelector('.hero');
       if (!canvas || !hero) throw new Error('hero/canvas 不存在');
 
-      const POOL = ['const','let','=>','async','await','npm','git','vibe','ship','{}','()','0x1F','AI','RN','fn','01','··','//','return','&&','??','tsx','jsx','ark','node','build','run','npx',':=','...'];
+      const POOL = ['const','let','=>','async','await','npm','git','dev','ship','{}','()','0x1F','AI','RN','fn','01','··','//','return','&&','??','tsx','jsx','ark','node','build','run','npx',':=','...'];
       // 定稿手感（demo 实测）：密度 240 / 速度 2.1 / 视差 1.9 / 朱红 29%（触屏走静态兜底，不进此分支）。
       const params = { count: 240, speed: 2.1, parallax: 1.9, accentRatio: 0.29 };
       let scene, camera, renderer, group, raf = null, clock;
@@ -560,5 +560,5 @@
 </script>
 
 <script type="module" src="assets/theme-slider.js?v=179a29d8"></script>
-<script defer src="assets/site-extras.js?v=1"></script>
+<script defer src="assets/site-extras.js?v=2"></script>
 </body></html>

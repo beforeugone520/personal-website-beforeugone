@@ -1,6 +1,6 @@
 # BeforeUgone
 
-Bruce 的个人站 —— 一个能用 AI 出活的 vibe coder 的写作、作品与跨栈工具栈。
+Bruce 的个人站 —— 写作、作品与跨栈工具栈。
 
 线上地址：<https://beforeugone.com/>（GitHub Pages + 自定义域名）
 
