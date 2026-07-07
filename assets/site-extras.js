@@ -74,7 +74,7 @@
         ['egg', '???'], ['clear', '清屏'], ['exit', '关闭终端']
       ].map(function (c) { return '<span class="t-cmd">' + c[0] + '</span><span class="t-dim">' + c[1] + '</span>'; }).join('') + '</div>');
     },
-    whoami: function () { print('Bruce · 用 AI 把想法做出来，再回头把原理啃下来。' + greeting() + '。'); },
+    whoami: function () { print('BeforeUgone · 用 AI 把想法做出来，再回头把原理啃下来。' + greeting() + '。'); },
     work: function () { goSection('work', '作品'); }, projects: function () { goSection('work', '作品'); },
     blog: function () { print('↳ 前往写作…'); location.href = 'blog.html'; }, writing: function () { CMDS.blog(); },
     stack: function () { goSection('stack', '工具栈'); },

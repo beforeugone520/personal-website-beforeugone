@@ -1,6 +1,6 @@
 # BeforeUgone
 
-Bruce 的个人站 —— 写作、作品与跨栈工具栈。
+个人站 —— 写作、作品与跨栈工具栈。
 
 线上地址：<https://beforeugone.com/>（GitHub Pages + 自定义域名）
 
