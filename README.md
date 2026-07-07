@@ -2,14 +2,17 @@
 
 Bruce 的个人站 —— 一个能用 AI 出活的 vibe coder 的写作、作品与跨栈工具栈。
 
-线上地址：<https://beforeugone520.github.io/personal-website-beforeugone/>
+线上地址：<https://beforeugone.com/>（GitHub Pages + 自定义域名）
 
 ## 结构
 
-- `index.html` —— 主页（关于 / 作品 / 写作 / 工具栈 / 联系）
+- `index.html` —— 主页（作品 / 写作 / 工具栈 / 联系）
 - `blog.html` —— 写作目录
 - `posts/` —— 文章页（每篇一个 HTML 文件）
 - `css/site.css` —— 共享设计系统（改主题只改这里）
+- `404.html` / `robots.txt` / `sitemap.xml` —— Pages 自定义 404 与 SEO 基建
+- `assets/og.png` —— 社交分享卡片图（1200×630 静态资源，改品牌文案时需重新生成）
+- `scripts/bump-cache-stamp.sh` —— 重建滑块产物后一键同步全站 `?v=` 缓存戳
 
 主体纯静态、托管于 GitHub Pages；唯一例外是导航的主题滑块 widget，需构建（见下）。
 
@@ -33,8 +36,8 @@ pnpm test       # 跑逻辑单测
 
 产物 `assets/theme-slider.js|css` 由 `index.html` / `blog.html` / `posts/*.html` 引用并自挂载到导航 `#theme-slider`；导航只保留滑块作为浅/深主题切换控件。
 
-产物文件名无 hash，三页引用带 `?v=<短哈希>` 缓存戳。**重建后须更新这个戳**，否则浏览器吃旧缓存：
+产物文件名无 hash，各页引用带 `?v=<短哈希>` 缓存戳。**重建后跑一键脚本同步**（手动逐页替换曾出过戳分裂事故——index 与 blog/posts 各挂一个版本）：
 
 ```bash
-shasum -a 256 assets/theme-slider.js | cut -c1-8   # 取新短哈希，替换三页 ?v=
+./scripts/bump-cache-stamp.sh   # 取 js 产物短哈希，统一替换所有页面的 ?v=
 ```

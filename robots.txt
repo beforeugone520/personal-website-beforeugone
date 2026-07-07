@@ -1,0 +1,6 @@
+User-agent: *
+Allow: /
+Disallow: /docs/
+Disallow: /theme-slider/
+
+Sitemap: https://beforeugone.com/sitemap.xml

@@ -4,8 +4,32 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>BeforeUgone · Bruce 的个人站</title>
 <meta name="description" content="Bruce 的个人站：写作、作品与跨栈工具栈。">
+<link rel="canonical" href="https://beforeugone.com/">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%23d8431d'/%3E%3Ctext x='30' y='46' font-family='Georgia, serif' font-size='40' font-style='italic' font-weight='600' fill='white' text-anchor='middle'%3EU%3C/text%3E%3Ccircle cx='50' cy='44' r='4.5' fill='white'/%3E%3C/svg%3E">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="BeforeUgone">
+<meta property="og:title" content="BeforeUgone · Bruce 的个人站">
+<meta property="og:description" content="用 AI 把想法做出来，再回头把原理啃下来。写作、作品与跨栈工具栈。">
+<meta property="og:url" content="https://beforeugone.com/">
+<meta property="og:image" content="https://beforeugone.com/assets/og.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="BeforeUgone · Bruce 的个人站">
+<meta name="twitter:description" content="用 AI 把想法做出来，再回头把原理啃下来。">
+<meta name="twitter:image" content="https://beforeugone.com/assets/og.png">
+<script>
+  // 主题初始化放 head：首帧渲染前定稿 data-theme，根治深色系统用户进站闪白
+  (function () {
+    var root = document.documentElement;
+    var saved = null;
+    try { saved = localStorage.getItem('bug-theme'); } catch (e) {}
+    if (saved) root.setAttribute('data-theme', saved);
+    else if (window.matchMedia && matchMedia('(prefers-color-scheme: dark)').matches) root.setAttribute('data-theme', 'dark');
+  })();
+</script>
 <link rel="stylesheet" href="css/site.css">
-<link rel="stylesheet" href="assets/theme-slider.css?v=d69dad26">
+<link rel="stylesheet" href="assets/theme-slider.css?v=179a29d8">
 </head>
 <body>
 
@@ -61,10 +85,28 @@
         <a class="btn btn-ghost btn-arrow" href="https://github.com/beforeugone520?tab=repositories" target="_blank" rel="noopener">在 GitHub 看全部</a>
       </div>
       <div class="grid-2">
+        <article class="proj-card" style="grid-column:1/-1; border-color:color-mix(in oklch, var(--accent) 30%, var(--border)); background:linear-gradient(180deg, color-mix(in oklch, var(--accent) 6%, var(--surface)), var(--surface));">
+          <div class="proj-head">
+            <h3>FusionTerm · 把 Ghostty 搬进鸿蒙</h3>
+            <span class="idx">01</span>
+          </div>
+          <p class="sub">// HarmonyOS 真终端链路：native 渲染 + 远程 PTY</p>
+          <p>在鸿蒙上从零搭一条真终端链路。<strong>libghostty-ohos</strong>：把 Ghostty 终端核做成鸿蒙 HAR 库——XComponent native 渲染面 + ArkTS 控制层，IME 中文输入、字形 fallback、主题与选区、搜索；<strong>wand-agent</strong>：安全加固 fork 的 WebSocket PTY 后端——二进制帧直通 PTY、单写者串行、Bearer 鉴权、进程组回收、心跳保活。触屏 fling 惯性、捏合缩放字号、断线退避重连，都在真机上磨过手感。</p>
+          <div class="tag-row">
+            <span class="tag">HarmonyOS · ArkTS</span>
+            <span class="tag">C++ · libghostty-vt</span>
+            <span class="tag">XComponent 渲染</span>
+            <span class="tag">Go · WebSocket PTY</span>
+          </div>
+          <div class="row" style="gap:18px; padding-top:6px; flex-wrap:wrap;">
+            <a class="btn btn-ghost btn-arrow" href="https://github.com/beforeugone520/libghostty-ohos" target="_blank" rel="noopener" style="padding-inline:0;">libghostty-ohos · 终端 HAR 库</a>
+            <a class="btn btn-ghost" href="https://github.com/beforeugone520/wand-agent" target="_blank" rel="noopener" style="padding-inline:0;">wand-agent · PTY 后端</a>
+          </div>
+        </article>
         <article class="proj-card">
           <div class="proj-head">
             <h3>BeforeU-open · 开卷考资料包</h3>
-            <span class="idx">01</span>
+            <span class="idx">02</span>
           </div>
           <p class="sub">// 课程资料 → 可打印考试速查包</p>
           <p>把大学课程 PDF、PPT、PPTX 整理成开卷考试可用的打印资料包：可见页码拼版、章节目录、关键词索引、名词解释、思考题答案和课程重点 PDF，面向考场快速翻找。</p>
@@ -81,7 +123,7 @@
         <article class="proj-card">
           <div class="proj-head">
             <h3>BeforeU-report · 课程交付助手</h3>
-            <span class="idx">02</span>
+            <span class="idx">03</span>
           </div>
           <p class="sub">// 作业 / 实验报告 / 文档交付工作流</p>
           <p>面向课程作业、实验报告、小报告和数据分析交付：拆题清单、材料读取、公式排版、DOCX/PDF 渲染、截图附件、参考文献和提交前检查，强调保留原件和老师视角 review。</p>
@@ -98,7 +140,7 @@
         <article class="proj-card">
           <div class="proj-head">
             <h3>CS2 Major Pick'em · 情报终端</h3>
-            <span class="idx">03</span>
+            <span class="idx">04</span>
           </div>
           <p class="sub">// majors.im 式瑞士轮预测器</p>
           <p>把 IEM Cologne Major 2026 瑞士轮做成 broadcast 级战术终端：逐场点选胜者，按种子 + Buchholz 自动重排，真实赛果与引擎模拟混合，模型 / 专家 / 市场三路融合置信度。</p>
@@ -116,7 +158,7 @@
         <article class="proj-card">
           <div class="proj-head">
             <h3>AI Framecut · 视频拉片</h3>
-            <span class="idx">04</span>
+            <span class="idx">05</span>
           </div>
           <p class="sub">// 网页端 AI 拉片分析</p>
           <p>上传视频 → 调大模型做深度拉片：自动生成分镜镜头脚本 + 画面风格总结，点镜头跳播、就地编辑、节奏统计，一键拼复刻提示词。导出含 SRT 字幕，Gemini / Claude / GPT 三引擎。</p>
@@ -133,7 +175,7 @@
         <article class="proj-card" style="grid-column:1/-1; border-color:color-mix(in oklch, #1f8a70 36%, var(--border)); background:linear-gradient(180deg, color-mix(in oklch, #1f8a70 8%, var(--surface)), var(--surface));">
           <div class="proj-head">
             <h3>黄海浒苔绿潮预报链 · 交互演示</h3>
-            <span class="idx">05</span>
+            <span class="idx">06</span>
           </div>
           <p class="sub">// 课程作业 → 移动优先 H5 滚动叙事</p>
           <p>把「监测 → 机制 → 模型 → 风险」的绿潮证据链做成一页可玩的交互：拖时间轴看绿潮在黄海上长出来又漂走、滑四个参数估「大小年」、点开 LTRANS-GT 耦合模型每个环节、点亮岸段看「致险 × 脆弱」四级风险。深海卫星遥感风、纯前端零依赖，手机扫码竖屏更佳。</p>
@@ -178,9 +220,20 @@
         <a class="btn btn-ghost btn-arrow" href="blog.html">全部文章</a>
       </div>
       <div>
-        <article class="log-row">
+        <a class="log-row" href="posts/hello-world.html" style="text-decoration:none; color:inherit;">
           <div class="lead-col">
             <span class="meta">№ 01</span>
+            <span class="status">随笔</span>
+          </div>
+          <div>
+            <h3>开张：为什么我决定开始写</h3>
+            <p>一个能用 AI 出活的 vibe coder，为什么要写博客？第一篇，也是写给自己的说明书。</p>
+          </div>
+          <span class="pull num meta">2026-06-15</span>
+        </a>
+        <article class="log-row">
+          <div class="lead-col">
+            <span class="meta">№ 02</span>
             <span class="status">计划</span>
           </div>
           <div>
@@ -209,6 +262,7 @@
             <tr><td>Python · ML <span class="meta">sklearn / xgboost / tf</span></td></tr>
             <tr><td>React Native · Expo · TS</td></tr>
             <tr><td>HarmonyOS · ArkTS / ArkUI</td></tr>
+            <tr><td>C / C++ · 终端渲染 <span class="meta">libghostty / XComponent</span></td></tr>
             <tr><td>React / Vite</td></tr>
             <tr><td>AI · Vibe Coding</td></tr>
           </tbody>
@@ -247,14 +301,7 @@
 </footer>
 
 <script>
-  // 主题：跟随系统，记忆选择
-  (function () {
-    var root = document.documentElement;
-    var saved = null;
-    try { saved = localStorage.getItem('bug-theme'); } catch (e) {}
-    if (saved) root.setAttribute('data-theme', saved);
-    else if (window.matchMedia && matchMedia('(prefers-color-scheme: dark)').matches) root.setAttribute('data-theme', 'dark');
-  })();
+  // 主题初始化已移至 <head>（消除深色首帧闪白）
 
   // 移动端菜单
   (function () {
@@ -307,7 +354,7 @@
     sections.forEach(function (s) { io.observe(s); });
   })();
 
-  // 复制邮箱（占位邮箱，替换成你自己的）
+  // 复制邮箱（域名邮箱，Cloudflare Email Routing 转发）
   (function () {
     var btn = document.getElementById('copyMail');
     var label = document.getElementById('mailLabel');
@@ -404,8 +451,9 @@
   const coarse = matchMedia('(pointer: coarse)').matches;
   function webglOK(){ try { const c=document.createElement('canvas'); return !!(window.WebGLRenderingContext && (c.getContext('webgl')||c.getContext('experimental-webgl'))); } catch(e){ return false; } }
 
-  // 降级：reduced-motion / 无 WebGL → 保持静态字符纹理，不初始化 3D。
-  if (!reduceMotion && webglOK()) {
+  // 降级：reduced-motion / 触屏 / 无 WebGL → 保持静态字符纹理，不初始化 3D。
+  // 触屏设备直接用静态兜底：省掉整个 three.js 下载（~150KB gzip）与 GPU 常驻，移动端首屏更轻。
+  if (!reduceMotion && !coarse && webglOK()) {
     try {
       const THREE = await import('three');
       const canvas = document.getElementById('heroField');
@@ -413,8 +461,8 @@
       if (!canvas || !hero) throw new Error('hero/canvas 不存在');
 
       const POOL = ['const','let','=>','async','await','npm','git','vibe','ship','{}','()','0x1F','AI','RN','fn','01','··','//','return','&&','??','tsx','jsx','ark','node','build','run','npx',':=','...'];
-      // 定稿手感（demo 实测）：密度 240 / 速度 2.1 / 视差 1.9 / 朱红 29%；触屏降密度、关视差。
-      const params = { count: coarse ? 150 : 240, speed: 2.1, parallax: coarse ? 0 : 1.9, accentRatio: 0.29 };
+      // 定稿手感（demo 实测）：密度 240 / 速度 2.1 / 视差 1.9 / 朱红 29%（触屏走静态兜底，不进此分支）。
+      const params = { count: 240, speed: 2.1, parallax: 1.9, accentRatio: 0.29 };
       let scene, camera, renderer, group, raf = null, clock;
       const texCache = new Map();
       const mouse = { x:0, y:0, tx:0, ty:0 };
@@ -511,6 +559,6 @@
   }
 </script>
 
-<script type="module" src="assets/theme-slider.js?v=d69dad26"></script>
+<script type="module" src="assets/theme-slider.js?v=179a29d8"></script>
 <script defer src="assets/site-extras.js?v=1"></script>
 </body></html>

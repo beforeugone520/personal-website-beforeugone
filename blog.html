@@ -5,8 +5,27 @@
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>写作 · BeforeUgone</title>
 <meta name="description" content="BeforeUgone 的写作。关于 vibe coding、跨栈开发、把想法做出来的记录。" />
+<link rel="canonical" href="https://beforeugone.com/blog.html" />
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%23d8431d'/%3E%3Ctext x='30' y='46' font-family='Georgia, serif' font-size='40' font-style='italic' font-weight='600' fill='white' text-anchor='middle'%3EU%3C/text%3E%3Ccircle cx='50' cy='44' r='4.5' fill='white'/%3E%3C/svg%3E" />
+<meta property="og:type" content="website" />
+<meta property="og:site_name" content="BeforeUgone" />
+<meta property="og:title" content="写作 · BeforeUgone" />
+<meta property="og:description" content="关于 vibe coding、跨栈开发、把想法做出来的记录。慢更，但都尽量诚实。" />
+<meta property="og:url" content="https://beforeugone.com/blog.html" />
+<meta property="og:image" content="https://beforeugone.com/assets/og.png" />
+<meta name="twitter:card" content="summary_large_image" />
+<script>
+  // 主题初始化放 head：首帧渲染前定稿 data-theme，根治深色首帧闪白（与主页一致）
+  (function () {
+    var root = document.documentElement;
+    var saved = null;
+    try { saved = localStorage.getItem('bug-theme'); } catch (e) {}
+    if (saved) root.setAttribute('data-theme', saved);
+    else if (window.matchMedia && matchMedia('(prefers-color-scheme: dark)').matches) root.setAttribute('data-theme', 'dark');
+  })();
+</script>
 <link rel="stylesheet" href="css/site.css" />
-<link rel="stylesheet" href="assets/theme-slider.css?v=89657a14" />
+<link rel="stylesheet" href="assets/theme-slider.css?v=179a29d8" />
 </head>
 <body>
 
@@ -14,7 +33,6 @@
   <div class="container topnav-inner">
     <a class="brand" href="index.html">Before<span class="u" style="font-style:italic;color:var(--accent)">U</span>gone<span class="dot">.</span></a>
     <nav class="nav-links" id="navLinks">
-      <a href="index.html#about">关于</a>
       <a href="index.html#work">作品</a>
       <a href="blog.html" class="active">写作</a>
       <a href="index.html#stack">工具栈</a>
@@ -52,12 +70,20 @@
       </a>
       -->
 
+      <a class="post-row" href="posts/hello-world.html">
+        <span class="p-date num">2026-06-15</span>
+        <div>
+          <h3>开张：为什么我决定开始写</h3>
+          <p class="p-dek">一个能用 AI 出活的 vibe coder，为什么要写博客？第一篇，也是写给自己的说明书。</p>
+        </div>
+        <span class="p-cat meta">随笔</span>
+      </a>
+
     </div>
 
-    <p class="empty-note">
-      想加新文章？两步：① 复制 <code>posts/hello-world.html</code> 成新文件、改成你的内容；
-      ② 把上面列表里被注释的那段模板取消注释，填好 <code>href</code>、日期、标题即可。文章顺序手动从新到旧排列，纯静态、适合 GitHub Pages。
-    </p>
+    <!-- 站主备忘：加新文章两步 —— ① 复制 posts/hello-world.html 成新文件改内容；
+         ② 把上面列表顶部被注释的模板复制一份取消注释，填好 href / 日期 / 标题。
+         文章顺序手动从新到旧排列，纯静态、适合 GitHub Pages。 -->
   </section>
 </main>
 
@@ -68,14 +94,7 @@
 </footer>
 
 <script>
-  // 主题：跟随系统，记忆选择（与主页共用 localStorage，切页保持一致）
-  (function () {
-    var root = document.documentElement;
-    var saved = null;
-    try { saved = localStorage.getItem('bug-theme'); } catch (e) {}
-    if (saved) root.setAttribute('data-theme', saved);
-    else if (window.matchMedia && matchMedia('(prefers-color-scheme: dark)').matches) root.setAttribute('data-theme', 'dark');
-  })();
+  // 主题初始化已移至 <head>（消除深色首帧闪白）
 
   // 移动端菜单
   (function () {
@@ -90,7 +109,7 @@
     });
   })();
 </script>
-<script type="module" src="assets/theme-slider.js?v=89657a14"></script>
+<script type="module" src="assets/theme-slider.js?v=179a29d8"></script>
 <script defer src="assets/site-extras.js?v=1"></script>
 </body>
 </html>
