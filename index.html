@@ -90,8 +90,8 @@
             <h3>FusionTerm · 把 Ghostty 搬进鸿蒙</h3>
             <span class="idx">01</span>
           </div>
-          <p class="sub">// HarmonyOS 真终端链路：native 渲染 + 远程 PTY</p>
-          <p>在鸿蒙上从零搭一条真终端链路。<strong>libghostty-ohos</strong>：把 Ghostty 终端核做成鸿蒙 HAR 库——XComponent native 渲染面 + ArkTS 控制层，IME 中文输入、字形 fallback、主题与选区、搜索；<strong>wand-agent</strong>：安全加固 fork 的 WebSocket PTY 后端——二进制帧直通 PTY、单写者串行、Bearer 鉴权、进程组回收、心跳保活。触屏 fling 惯性、捏合缩放字号、断线退避重连，都在真机上磨过手感。</p>
+          <p class="sub">// HarmonyOS 终端：native 渲染 + 远程 PTY</p>
+          <p>给鸿蒙做的终端项目。<strong>libghostty-ohos</strong>：把 Ghostty 终端核做成 HAR 库——XComponent native 渲染面 + ArkTS 控制层，支持 IME 中文输入、字形 fallback、主题与选区、搜索；<strong>wand-agent</strong>：配套的 WebSocket PTY 后端（加固过的 fork）——二进制帧直通 PTY、单写者串行、Bearer 鉴权、进程组回收、心跳保活。另有触屏 fling 惯性、捏合缩放字号、断线退避重连。</p>
           <div class="tag-row">
             <span class="tag">HarmonyOS · ArkTS</span>
             <span class="tag">C++ · libghostty-vt</span>
