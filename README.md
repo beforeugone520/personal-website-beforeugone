@@ -16,6 +16,12 @@
 
 主体纯静态、托管于 GitHub Pages；唯一例外是导航的主题滑块 widget，需构建（见下）。
 
+## 动态后端规划
+
+静态站暂不迁移。计划使用独立的轻量后端增加实时状态、Ship Log、留言审核、文章轻回应，并逐步建设不依赖微信的 OpenClaw 私人消息中枢。当前仅完成方案交接，尚未上线 API。
+
+架构、数据模型、安全边界和分阶段实施见 [`docs/handoff-personal-backend.md`](docs/handoff-personal-backend.md)。
+
 ## 加一篇新文章
 
 1. 复制 `posts/hello-world.html` 成新文件，改成你的内容；
