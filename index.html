@@ -18,6 +18,8 @@
 <meta name="twitter:title" content="BeforeUgone · 个人站">
 <meta name="twitter:description" content="用 AI 把想法做出来，再回头把原理啃下来。">
 <meta name="twitter:image" content="https://beforeugone.com/assets/og.png">
+<meta name="beforeu-api-base" content="">
+<meta name="beforeu-turnstile-site-key" content="0x4AAAAAAD0bY_Pr2rQjUplB">
 <script>
   // 主题初始化放 head：首帧渲染前定稿 data-theme，根治深色系统用户进站闪白
   (function () {
@@ -47,7 +49,7 @@
       <a class="icon-btn" href="https://github.com/beforeugone520" target="_blank" rel="noopener" aria-label="GitHub">
         <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 2C6.48 2 2 6.59 2 12.25c0 4.53 2.87 8.37 6.84 9.73.5.09.68-.22.68-.49 0-.24-.01-1.05-.01-1.9-2.78.62-3.37-1.21-3.37-1.21-.45-1.18-1.11-1.49-1.11-1.49-.91-.64.07-.63.07-.63 1 .07 1.53 1.06 1.53 1.06.89 1.57 2.34 1.12 2.91.85.09-.66.35-1.12.63-1.37-2.22-.26-4.56-1.14-4.56-5.06 0-1.12.39-2.03 1.03-2.75-.1-.26-.45-1.3.1-2.71 0 0 .84-.28 2.75 1.05A9.35 9.35 0 0 1 12 6.99c.85 0 1.7.12 2.5.35 1.9-1.33 2.74-1.05 2.74-1.05.55 1.41.2 2.45.1 2.71.64.72 1.03 1.63 1.03 2.75 0 3.93-2.34 4.8-4.57 5.06.36.32.68.94.68 1.9 0 1.37-.01 2.47-.01 2.81 0 .27.18.59.69.49A10.12 10.12 0 0 0 22 12.25C22 6.59 17.52 2 12 2Z"/></svg>
       </a>
-      <button class="icon-btn nav-toggle" id="navToggle" aria-label="菜单" aria-expanded="false">
+      <button class="icon-btn nav-toggle" id="navToggle" type="button" aria-label="菜单" aria-expanded="false">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 7h16M4 12h16M4 17h16"></path></svg>
       </button>
     </div>
@@ -71,6 +73,25 @@
       <div class="hero-cta">
         <a class="btn btn-primary" href="blog.html">读我的写作</a>
         <a class="btn btn-secondary btn-arrow" href="#work">看看作品</a>
+      </div>
+    </div>
+  </section>
+
+  <!-- NOW · API 成功返回公开状态后才显示 -->
+  <section class="now-band" id="now" aria-labelledby="nowHeading" hidden>
+    <div class="container now-layout">
+      <header class="now-heading">
+        <span class="eyebrow">Now</span>
+        <h2 id="nowHeading">此刻。</h2>
+      </header>
+      <div class="now-copy">
+        <p class="now-text" id="nowText"></p>
+        <p class="now-detail" id="nowDetail" hidden></p>
+      </div>
+      <div class="now-meta">
+        <span class="now-state" id="nowState"></span>
+        <a class="now-link btn-arrow" id="nowLink" hidden>展开看看</a>
+        <time id="nowUpdated"></time>
       </div>
     </div>
   </section>
@@ -199,12 +220,24 @@
         </article>
       </div>
 
+      <section class="ship-log" id="ship" aria-labelledby="shipHeading" hidden>
+        <div class="ship-head">
+          <div>
+            <span class="eyebrow">Ship Log</span>
+            <h2 id="shipHeading">最近做成的事。</h2>
+          </div>
+          <span class="meta">发布、更新与里程碑</span>
+        </div>
+        <ol class="ship-list" id="shipList"></ol>
+        <p class="dynamic-empty" id="shipEmpty" hidden>还没有公开记录。</p>
+      </section>
+
       <div class="gh-live" id="ghLive" hidden>
         <div class="gh-sub">
-          <span class="gh-title"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 2C6.48 2 2 6.58 2 12.25c0 4.53 2.87 8.37 6.84 9.73.5.1.68-.22.68-.49 0-.24-.01-.88-.01-1.73-2.78.62-3.37-1.2-3.37-1.2-.46-1.18-1.11-1.5-1.11-1.5-.91-.64.07-.62.07-.62 1 .07 1.53 1.06 1.53 1.06.89 1.56 2.34 1.11 2.91.85.09-.66.35-1.11.63-1.37-2.22-.26-4.56-1.14-4.56-5.07 0-1.12.39-2.03 1.03-2.75-.1-.26-.45-1.3.1-2.71 0 0 .84-.27 2.75 1.05A9.3 9.3 0 0 1 12 6.84c.85 0 1.71.12 2.51.34 1.91-1.32 2.75-1.05 2.75-1.05.55 1.41.2 2.45.1 2.71.64.72 1.03 1.63 1.03 2.75 0 3.94-2.34 4.81-4.57 5.06.36.32.68.94.68 1.91 0 1.38-.01 2.49-.01 2.83 0 .27.18.6.69.49A10.02 10.02 0 0 0 22 12.25C22 6.58 17.52 2 12 2Z"></path></svg>GitHub · 最近在忙</span>
+          <span class="gh-title"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 2C6.48 2 2 6.58 2 12.25c0 4.53 2.87 8.37 6.84 9.73.5.1.68-.22.68-.49 0-.24-.01-.88-.01-1.73-2.78.62-3.37-1.2-3.37-1.2-.46-1.18-1.11-1.5-1.11-1.5-.91-.64.07-.62.07-.62 1 .07 1.53 1.06 1.53 1.06.89 1.56 2.34 1.11 2.91.85.09-.66.35-1.11.63-1.37-2.22-.26-4.56-1.14-4.56-5.07 0-1.12.39-2.03 1.03-2.75-.1-.26-.45-1.3.1-2.71 0 0 .84-.27 2.75 1.05A9.3 9.3 0 0 1 12 6.84c.85 0 1.71.12 2.51.34 1.91-1.32 2.75-1.05 2.75-1.05.55 1.41.2 2.45.1 2.71.64.72 1.03 1.63 1.03 2.75 0 3.94-2.34 4.81-4.57 5.06.36.32.68.94.68 1.91 0 1.38-.01 2.49-.01 2.83 0 .27.18.6.69.49A10.02 10.02 0 0 0 22 12.25C22 6.58 17.52 2 12 2Z"></path></svg>GitHub · 原始开发活动</span>
           <span class="gh-total meta" id="ghTotal"></span>
         </div>
-        <div class="gh-heat" id="ghHeat" aria-label="GitHub 过去一年贡献热力图"></div>
+        <div class="gh-heat" id="ghHeat" role="img" aria-label="GitHub 过去一年贡献热力图"></div>
         <div class="gh-repos" id="ghRepos"></div>
       </div>
     </div>
@@ -267,6 +300,44 @@
             <tr><td>AI · 辅助开发</td></tr>
           </tbody>
         </table>
+      </div>
+    </div>
+  </section>
+
+  <!-- GUESTBOOK · 读取成功后显示，写入失败不会清空输入 -->
+  <section class="section guestbook-section" id="guestbook" aria-labelledby="guestbookHeading" hidden>
+    <div class="container">
+      <header class="guestbook-head">
+        <span class="eyebrow">Guestbook</span>
+        <h2 id="guestbookHeading">在这里留一句。</h2>
+        <p class="lead">公开留言会先经过审核，再安静地留在这里。</p>
+      </header>
+      <div class="guestbook-layout">
+        <div class="guestbook-stream">
+          <ol class="guestbook-list" id="guestbookList" aria-live="polite"></ol>
+          <p class="dynamic-empty" id="guestbookEmpty" hidden>这里还很安静，等第一句话。</p>
+          <button class="btn btn-ghost guestbook-more" id="guestbookMore" type="button" hidden>再看几条</button>
+        </div>
+        <form class="guestbook-form" id="guestbookForm" novalidate>
+          <div class="field-row">
+            <label for="guestbookNickname">怎么称呼你 <span>可选</span></label>
+            <input id="guestbookNickname" name="nickname" type="text" maxlength="40" autocomplete="nickname" placeholder="匿名访客">
+          </div>
+          <div class="field-row">
+            <div class="field-label-row">
+              <label for="guestbookBody">想说的话</label>
+              <span class="field-count"><output id="guestbookCount">0</output> / 280</span>
+            </div>
+            <textarea id="guestbookBody" name="message" minlength="10" maxlength="280" rows="6" required placeholder="写下 10—280 个字。" aria-describedby="guestbookStatus"></textarea>
+          </div>
+          <div class="hp-field" aria-hidden="true">
+            <label for="guestbookWebsite">网站</label>
+            <input id="guestbookWebsite" name="website" type="text" tabindex="-1" autocomplete="off">
+          </div>
+          <div class="turnstile-host" id="guestbookTurnstile"></div>
+          <p class="form-status" id="guestbookStatus" role="status" aria-live="polite"></p>
+          <button class="btn btn-primary guestbook-submit" id="guestbookSubmit" type="submit">提交留言</button>
+        </form>
       </div>
     </div>
   </section>
@@ -365,12 +436,17 @@
         label.parentElement.classList.add('copied-flag');
         setTimeout(function () { label.textContent = '复制邮箱'; label.parentElement.classList.remove('copied-flag'); }, 1800);
       };
+      var failed = function () {
+        label.textContent = '复制失败 · ' + EMAIL;
+        setTimeout(function () { label.textContent = '复制邮箱'; }, 2600);
+      };
       if (navigator.clipboard && navigator.clipboard.writeText) {
-        navigator.clipboard.writeText(EMAIL).then(done).catch(done);
+        navigator.clipboard.writeText(EMAIL).then(done).catch(failed);
       } else {
         var t = document.createElement('textarea'); t.value = EMAIL; document.body.appendChild(t); t.select();
-        try { document.execCommand('copy'); } catch (e) {}
-        document.body.removeChild(t); done();
+        var copied = false;
+        try { copied = document.execCommand('copy'); } catch (e) {}
+        document.body.removeChild(t); copied ? done() : failed();
       }
     });
   })();
@@ -387,12 +463,17 @@
         btn.classList.add('copied-flag');
         setTimeout(function () { label.textContent = '微信 · ' + WX; btn.classList.remove('copied-flag'); }, 1800);
       };
+      var failed = function () {
+        label.textContent = '复制失败 · ' + WX;
+        setTimeout(function () { label.textContent = '微信 · ' + WX; }, 2600);
+      };
       if (navigator.clipboard && navigator.clipboard.writeText) {
-        navigator.clipboard.writeText(WX).then(done).catch(done);
+        navigator.clipboard.writeText(WX).then(done).catch(failed);
       } else {
         var t = document.createElement('textarea'); t.value = WX; document.body.appendChild(t); t.select();
-        try { document.execCommand('copy'); } catch (e) {}
-        document.body.removeChild(t); done();
+        var copied = false;
+        try { copied = document.execCommand('copy'); } catch (e) {}
+        document.body.removeChild(t); copied ? done() : failed();
       }
     });
   })();
@@ -560,5 +641,6 @@
 </script>
 
 <script type="module" src="assets/theme-slider.js?v=179a29d8"></script>
-<script defer src="assets/site-extras.js?v=4"></script>
+<script defer src="assets/site-extras.js?v=5"></script>
+<script defer src="assets/site-dynamic.js?v=1"></script>
 </body></html>

@@ -10,17 +10,40 @@
 - `blog.html` —— 写作目录
 - `posts/` —— 文章页（每篇一个 HTML 文件）
 - `css/site.css` —— 共享设计系统（改主题只改这里）
+- `assets/site-dynamic.js` —— Now / Ship Log / 留言 / 文章回应的静态端接入与失败降级
+- `backend/` —— Phase 1 Go API、SQLite migration 与测试
+- `deploy/` —— systemd、备份 timer 和 Caddy 的无密钥部署样例
+- `docs/backend-api.md` —— 已实现的 Phase 1 HTTP 契约
+- `docs/backend-operations.md` —— Cloudflare/Azure 部署、备份、恢复与回滚 runbook
 - `404.html` / `robots.txt` / `sitemap.xml` —— Pages 自定义 404 与 SEO 基建
 - `assets/og.png` —— 社交分享卡片图（1200×630 静态资源，改品牌文案时需重新生成）
 - `scripts/bump-cache-stamp.sh` —— 重建滑块产物后一键同步全站 `?v=` 缓存戳
+- `scripts/backup-backend.sh` —— SQLite WAL 一致性日备与周备
 
 主体纯静态、托管于 GitHub Pages；唯一例外是导航的主题滑块 widget，需构建（见下）。
 
-## 动态后端规划
+## 动态后端
 
-静态站暂不迁移。计划使用独立的轻量后端增加实时状态、Ship Log、留言审核、文章轻回应，并逐步建设不依赖微信的 OpenClaw 私人消息中枢。当前仅完成方案交接，尚未上线 API。
+Phase 1 已在仓库内实现实时状态、Ship Log、留言审核、文章轻回应、GitHub webhook、健康检查、限流和基础审计。当前只是本地实现，**尚未部署到 Hermes/Azure，也没有完成真实 Cloudflare/Turnstile 验收**。
 
-架构、数据模型、安全边界和分阶段实施见 [`docs/handoff-personal-backend.md`](docs/handoff-personal-backend.md)。
+静态站不迁移，仍由 GitHub Pages 承载；Azure 只计划运行 `api.beforeugone.com` 的轻量 Go/SQLite 服务。后续 OpenClaw 私人消息中枢仍处于规划阶段。
+
+架构和后续阶段见 [`docs/handoff-personal-backend.md`](docs/handoff-personal-backend.md)，实际 API 与部署步骤分别见 [`docs/backend-api.md`](docs/backend-api.md) 和 [`docs/backend-operations.md`](docs/backend-operations.md)。
+
+本地验证后端：
+
+```bash
+cd backend
+go test ./...
+ANONYMIZATION_SECRET=local-anonymization-secret-32-chars \
+ADMIN_TOKEN=local-admin-token-at-least-32-chars \
+ALLOW_INSECURE_PUBLIC_WRITES=true \
+CORS_ALLOWED_ORIGINS=http://127.0.0.1:8787 \
+STATIC_DIR=.. \
+go run .
+```
+
+然后打开 `http://127.0.0.1:8787/`。上述不安全写入开关只有在同时设置 `STATIC_DIR` 时才可用；生产必须保持关闭，并配置 Turnstile，否则公开写接口会以 `503` 拒绝请求。环境变量全集见 [`backend/.env.example`](backend/.env.example)。
 
 ## 加一篇新文章
 

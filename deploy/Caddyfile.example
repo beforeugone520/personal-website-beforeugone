@@ -1,0 +1,48 @@
+# Cloudflare ranges verified against https://www.cloudflare.com/ips/ on
+# 2026-07-12. Keep these synchronized before adding or removing a range.
+{
+	servers {
+		0rtt off
+		trusted_proxies static 173.245.48.0/20 103.21.244.0/22 103.22.200.0/22 103.31.4.0/22 141.101.64.0/18 108.162.192.0/18 190.93.240.0/20 188.114.96.0/20 197.234.240.0/22 198.41.128.0/17 162.158.0.0/15 104.16.0.0/13 104.24.0.0/14 172.64.0.0/13 131.0.72.0/22 2400:cb00::/32 2606:4700::/32 2803:f800::/32 2405:b500::/32 2405:8100::/32 2a06:98c0::/29 2c0f:f248::/32
+		trusted_proxies_strict
+		client_ip_headers CF-Connecting-IP X-Forwarded-For
+	}
+}
+
+# The static website remains on GitHub Pages. This origin serves only
+# api.beforeugone.com and is reachable publicly only through Cloudflare.
+api.beforeugone.com {
+	encode zstd gzip
+
+	@untrusted {
+		not remote_ip 173.245.48.0/20 103.21.244.0/22 103.22.200.0/22 103.31.4.0/22 141.101.64.0/18 108.162.192.0/18 190.93.240.0/20 188.114.96.0/20 197.234.240.0/22 198.41.128.0/17 162.158.0.0/15 104.16.0.0/13 104.24.0.0/14 172.64.0.0/13 131.0.72.0/22 2400:cb00::/32 2606:4700::/32 2803:f800::/32 2405:b500::/32 2405:8100::/32 2a06:98c0::/29 2c0f:f248::/32 127.0.0.0/8 ::1 100.64.0.0/10
+	}
+	respond @untrusted 403
+
+	# Admin operations use localhost/SSH or Tailscale, never the public edge.
+	@admin path /v1/admin /v1/admin/*
+	respond @admin 404
+
+	header {
+		Strict-Transport-Security "max-age=31536000; includeSubDomains"
+		X-Content-Type-Options "nosniff"
+		Referrer-Policy "no-referrer"
+		Permissions-Policy "camera=(), geolocation=(), microphone=()"
+	}
+
+	reverse_proxy 127.0.0.1:8787 {
+		header_up X-BeforeU-Client-IP {client_ip}
+		health_uri /readyz
+		health_interval 30s
+		health_timeout 2s
+	}
+
+	log {
+		output file /var/log/caddy/beforeu-api.access.log {
+			roll_size 10MiB
+			roll_keep 5
+			roll_keep_for 336h
+		}
+		format json
+	}
+}

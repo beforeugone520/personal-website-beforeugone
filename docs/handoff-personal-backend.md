@@ -1,6 +1,6 @@
 # BeforeUgone 个人站动态后端与 Agent 中枢 Handoff
 
-> 状态：方案交接，尚未实现
+> 状态：Phase 1 已在仓库本地实现，尚未部署到 Hermes/Azure，也未完成生产验收；Phase 2 至 Phase 4 仍为方案
 > 定稿日期：2026-07-12
 
 ## 1. 目标
@@ -22,14 +22,16 @@
 - 仓库：`beforeugone520/personal-website-beforeugone`。
 - 前端：主体为静态 HTML/CSS/JavaScript；主题滑块是独立 Vue/Vite 子工程。
 - 已有动态感：GitHub 仓库动态、贡献热力图、终端模式、Konami 彩蛋。
-- 当前没有自建数据库、用户系统或业务 API。
+- 仓库现有 Phase 1 Go/SQLite API、静态动态层和部署样例；生产域名目前仍没有经过验收的自建业务 API。
+- Hermes 已安装 Caddy 2.11.4 和 `sqlite3`，但 systemd/Caddy 配置、secret、DNS 和数据恢复演练尚未应用。
 - 决策：不把静态前端迁到 Azure，Azure 只承载轻量 API、消息中继和 OpenClaw 集成。
+- Phase 1 的实际接口以 [`backend-api.md`](backend-api.md) 为准，部署与恢复以 [`backend-operations.md`](backend-operations.md) 为准。
 
 ## 3. 产品范围
 
 ### 3.1 个人站动态层
 
-第一批适合直接落地的能力：
+动态层候选能力如下；Phase 1 本地实现了第 1 至 4 项，第 5 至 8 项尚未实现：
 
 1. `Now`：首页显示站主当前状态和更新时间；支持从 OpenClaw 或管理端修改。
 2. `Ship Log`：聚合 GitHub Push/Release 与手动记录，形成简洁的完成事项时间流。
@@ -110,14 +112,24 @@ Harmony-Claw (later) ---------- HTTPS/WebSocket ----^
 - 文件：MVP 只允许小文件并设置总配额；大文件阶段再接 Azure Blob。
 - 推送：PWA 先接 Web Push；HarmonyOS 阶段再评估鸿蒙推送。
 
-## 6. 数据模型草案
+## 6. 数据模型
+
+Phase 1 已实现：
 
 | 表 | 用途 |
 | --- | --- |
 | `now_status` | 当前状态、可见性、更新时间 |
-| `ship_entries` | GitHub/手工完成记录 |
+| `ship_entries` | GitHub/手工完成记录及软隐藏 |
 | `guestbook_entries` | 留言、审核状态、站主回复 |
-| `page_reactions` | 页面与反应类型的去重计数 |
+| `page_reactions` | 页面与反应类型的匿名去重计数 |
+| `idempotency_requests` | 公共写请求的幂等结果 |
+| `github_deliveries` | GitHub delivery 去重 |
+| `audit_log` | 管理操作和 webhook 写入审计 |
+
+后续阶段草案：
+
+| 表 | 用途 |
+| --- | --- |
 | `project_nudges` | 项目催更事件与周汇总 |
 | `page_metrics_daily` | 隐私友好的日聚合统计 |
 | `time_capsules` | 定时公开内容 |
@@ -128,23 +140,41 @@ Harmony-Claw (later) ---------- HTTPS/WebSocket ----^
 | `task_events` | 工具、阶段、审批和错误事件流 |
 | `artifacts` | 文件元数据、任务归属和过期时间 |
 | `devices` | 已配对设备与推送订阅 |
-| `audit_log` | 管理操作和安全事件 |
 
 不要在数据库中保存模型密钥、Gateway token 或钥匙串密码。
 
-## 7. API 草案
+## 7. API
+
+Phase 1 已实现的详细 JSON、校验、幂等和错误契约见 [`backend-api.md`](backend-api.md)。路由如下：
 
 公开读取：
 
 ```text
+GET  /healthz
+GET  /readyz
 GET  /v1/public/now
 GET  /v1/public/ship
 GET  /v1/public/guestbook
-GET  /v1/public/ideas
+GET  /v1/public/reactions?page_key=...
 POST /v1/public/guestbook
 POST /v1/public/reactions
-POST /v1/public/nudges
 ```
+
+Phase 1 管理与 webhook：
+
+```text
+PUT  /v1/admin/now
+POST /v1/admin/ship
+PUT  /v1/admin/ship/:id
+POST /v1/admin/ship/:id/hide
+GET  /v1/admin/guestbook?status=...
+POST /v1/admin/guestbook/:id/approve
+POST /v1/admin/guestbook/:id/reject
+POST /v1/admin/guestbook/:id/reply
+POST /v1/webhooks/github
+```
+
+后续阶段草案：
 
 已认证客户端：
 
@@ -160,25 +190,16 @@ GET  /v1/artifacts/:id
 GET  /v1/events/ws
 ```
 
-管理操作：
-
-```text
-PUT  /v1/admin/now
-POST /v1/admin/ship
-POST /v1/admin/guestbook/:id/approve
-POST /v1/admin/guestbook/:id/reply
-```
-
-具体路由在实现前允许调整，但需要同步更新 architecture、integration guide 和 operator runbook，不能只改代码。
+后续路由仍允许调整，但任何已实现路由变更都必须同时更新接口文档、前端集成和 operator runbook，不能只改代码。
 
 ## 8. 安全要求
 
 - 系统按单用户私人控制台设计，不宣称多租户隔离。
 - 初始设备通过 Tailscale 或服务器 CLI 产生的一次性短码配对。
 - 每台设备使用独立、可撤销的凭据，不共享管理员密码。
-- 公共写接口使用 Cloudflare Turnstile、速率限制、正文长度限制和审核队列。
+- 公共写接口使用 Cloudflare Turnstile、可信客户端 IP 限流、正文长度限制和审核队列；Turnstile secret 缺失时必须关闭写入而不是绕过验证。
 - 推送通知默认不携带敏感正文，只提示“有新消息”，打开客户端后再拉取。
-- 所有改变状态的请求使用幂等键，避免重连导致重复发送或重复执行。
+- Phase 1 公共匿名写接口使用幂等键，GitHub webhook 使用 delivery ID 去重；后续消息、任务和审批写接口也必须在实现时设计幂等语义。
 - 审批操作写入审计日志；危险动作默认不得自动批准。
 - `ask` 公开问答使用单独的公开资料索引和无工具模型调用，防止提示词注入触达私人环境。
 - 附件限制 MIME、大小、数量和保存期限；不得直接按用户文件名落盘。
@@ -187,12 +208,15 @@ POST /v1/admin/guestbook/:id/reply
 
 ### Phase 1：动态个人站
 
-- 建立 Go API、SQLite migration、systemd 服务和 Caddy 路由。
-- 实现 `Now`、`Ship Log`、留言审核、轻回应。
-- 主站增加无阻塞动态区域；API 失败时保留完整静态体验。
-- 增加备份、健康检查、限流和基础审计。
+- [x] 建立 Go API、SQLite migration、systemd 服务和 Caddy 样例。
+- [x] 实现 `Now`、`Ship Log`、留言审核、轻回应和 GitHub webhook。
+- [x] 主站增加无阻塞动态区域；API 失败时保留静态体验。
+- [x] 增加一致性备份脚本、健康检查、应用层限流、幂等和基础审计。
+- [ ] 在 Hermes/Azure 安装服务并配置真实 secret。
+- [ ] 配置 Cloudflare DNS、Full (strict)、Turnstile、边缘限流和 GitHub webhook。
+- [ ] 完成重启、API 故障、真实留言审核、备份恢复和回滚演练。
 
-验收：主站动态功能可用，服务器重启后数据不丢，API 故障不拖垮首页。
+验收：主站动态功能可用，服务器重启后数据不丢，API 故障不拖垮首页。当前只完成本地代码与自动测试，生产验收尚未达成。
 
 ### Phase 2：Relay PWA
 
@@ -232,7 +256,6 @@ POST /v1/admin/guestbook/:id/reply
 - Relay PWA 的具体前端栈。
 - 首版只通过 Tailscale访问，还是直接启用公开域名和设备配对。
 - Web Push 与鸿蒙推送的先后顺序。
-- 公开留言是否允许站主在网站展示回复。
 - 产物保存到本机磁盘还是首版就接 Azure Blob。
 
 这些决策不阻塞 Phase 1。实现者应先完成数据边界、API 失败降级和安全模型，再设计视觉界面。

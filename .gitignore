@@ -9,3 +9,14 @@
 
 # OD 批注截图，不发布
 *-drawing-*.png
+
+# Local backend configuration, data, and build output
+.env
+.env.*
+!.env.example
+backend/data/
+backend/*.db
+backend/*.db-shm
+backend/*.db-wal
+build/
+backend/beforeu-api

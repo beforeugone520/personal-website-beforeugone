@@ -1,0 +1,29 @@
+[Unit]
+Description=Back up the BeforeUgone API SQLite database
+
+[Service]
+Type=oneshot
+User=beforeu-api
+Group=beforeu-api
+EnvironmentFile=/etc/beforeu-api.env
+Environment=BEFOREU_BACKUP_DIR=/var/backups/beforeu-api
+ExecStart=/opt/beforeu/scripts/backup-backend.sh
+UMask=0077
+
+NoNewPrivileges=true
+PrivateDevices=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+# SQLite may need to create or recover WAL/SHM metadata even for an online
+# backup. The dedicated service account owns only this state directory.
+ReadWritePaths=/var/lib/beforeu-api /var/backups/beforeu-api
+ProtectKernelTunables=true
+ProtectKernelModules=true
+ProtectKernelLogs=true
+ProtectControlGroups=true
+RestrictSUIDSGID=true
+LockPersonality=true
+RestrictAddressFamilies=AF_UNIX
+CapabilityBoundingSet=
+AmbientCapabilities=
