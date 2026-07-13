@@ -24,6 +24,7 @@
 - 已有动态感：GitHub 仓库动态、贡献热力图、终端模式、Konami 彩蛋。
 - Phase 1 Go/SQLite API 已在 Hermes 通过 systemd 运行，生产域名为 `https://api.beforeugone.com`。
 - Caddy、真实 secret、Cloudflare DNS/Full (strict)、Turnstile 和 GitHub webhook 已应用；备份校验、临时恢复和重启持久化检查已通过。
+- Hermes OpenClaw 已获得独立的后端代管手册，只作为受约束的服务器运维者；详细权限边界见 [`openclaw-backend-operations.md`](openclaw-backend-operations.md)。
 - 决策：不把静态前端迁到 Azure，Azure 只承载轻量 API、消息中继和 OpenClaw 集成。
 - Phase 1 的实际接口以 [`backend-api.md`](backend-api.md) 为准，部署与恢复以 [`backend-operations.md`](backend-operations.md) 为准。
 
@@ -33,7 +34,7 @@
 
 动态层候选能力如下；Phase 1 已上线第 1 至 4 项，第 5 至 8 项尚未实现：
 
-1. `Now`：首页显示站主当前状态和更新时间；支持从 OpenClaw 或管理端修改。
+1. `Now`：首页显示站主当前状态和更新时间；由本机管理 API 更新。OpenClaw 只能在用户确认后以运维者身份调用，并无应用内集成。
 2. `Ship Log`：聚合 GitHub Push/Release 与手动记录，形成简洁的完成事项时间流。
 3. 留一句话：匿名或昵称留言，先审后发，可显示站主回复。
 4. 文章轻回应：有共鸣、学到了、想看后续、没看懂；无需账号，每设备每篇每类一次。
@@ -70,7 +71,24 @@ uptime
 - 产物中心：预览、下载、任务归属、过期清理。
 - 通知级别：静默、普通、重要、必须确认。
 
-## 4. 选定架构
+## 4. 当前与后续架构
+
+当前 Phase 1：
+
+```text
+beforeugone.com (GitHub Pages)
+        |
+        | HTTPS
+        v
+api.beforeugone.com (Cloudflare)
+        |
+        v
+Caddy -> beforeu-api -> SQLite
+
+OpenClaw Gateway 127.0.0.1:18789（独立运行，仅由 OpenClaw 作为运维者使用）
+```
+
+后续 Phase 2 至 Phase 4 才会引入 Relay：
 
 ```text
 beforeugone.com (GitHub Pages)
@@ -89,6 +107,8 @@ Caddy -> BeforeU Relay API -> SQLite
 claw.beforeugone.com (PWA) ---- HTTPS/WebSocket ----^
 Harmony-Claw (later) ---------- HTTPS/WebSocket ----^
 ```
+
+上面的 Relay、PWA、WebSocket 与自定义 Channel 是目标架构，不代表当前生产能力。
 
 关键边界：
 

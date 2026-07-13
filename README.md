@@ -15,6 +15,7 @@
 - `deploy/` —— systemd、备份 timer 和 Caddy 的无密钥部署样例
 - `docs/backend-api.md` —— 已实现的 Phase 1 HTTP 契约
 - `docs/backend-operations.md` —— Cloudflare/Azure 部署、备份、恢复与回滚 runbook
+- `docs/openclaw-backend-operations.md` —— 服务器 OpenClaw 日常代管手册与操作授权边界
 - `404.html` / `robots.txt` / `sitemap.xml` —— Pages 自定义 404 与 SEO 基建
 - `assets/og.png` —— 社交分享卡片图（1200×630 静态资源，改品牌文案时需重新生成）
 - `scripts/bump-cache-stamp.sh` —— 重建滑块产物后一键同步全站 `?v=` 缓存戳

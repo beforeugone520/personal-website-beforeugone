@@ -1,5 +1,6 @@
 # 主题滑块 widget 实现计划
 
+> 历史归档：该计划已经落地，未勾选框不代表当前待办。不要执行其中的旧 macOS 路径、stash/branch 步骤或 npm fallback；当前工作流以仓库根 `AGENTS.md` 和 `README.md` 为准。
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** 把 `claude-range-slider`（Vue3 + WebGL2 火焰滑块）原样迁入本仓库并改装成控制浅/深主题的滑块，构建成自挂载 bundle，缩小后挂到导航替掉 sun/moon 按钮（按钮保留为无 JS 兜底）。

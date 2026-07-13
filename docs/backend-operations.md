@@ -2,6 +2,8 @@
 
 > 当前状态：Phase 1 已于 2026-07-13 部署到 Hermes；`api.beforeugone.com` 经 Cloudflare/Caddy 提供服务，`beforeugone.com` 仍由 GitHub Pages 托管。核心生产路径已验收，真实浏览器 Turnstile 写入和代码回滚演练仍待完成。
 
+服务器 OpenClaw 的日常巡检、故障处理和操作授权边界见 [`openclaw-backend-operations.md`](openclaw-backend-operations.md)。本文件仍是人类维护的部署、恢复与回滚基准。
+
 ## 1. 边界与拓扑
 
 ```text
@@ -232,5 +234,7 @@ curl --fail http://127.0.0.1:8787/readyz
 3. 把新二进制安装为临时文件，再原子替换 `/usr/local/bin/beforeu-api`。
 4. `systemctl restart beforeu-api`，随后检查 `/readyz`、公共读取、一次受控管理读取以及静态站降级。
 5. 观察 journal、Caddy 5xx 和资源占用至少 10 分钟。
+
+Hermes 当前只有活动 API 二进制，没有可直接使用的历史 API 二进制。下一次发布覆盖前必须把当前文件保存为带 UTC 时间与旧 commit 的版本化 rollback artifact，并记录 SHA-256；不能把旧默认 Caddy 配置备份当作 API 回滚包。
 
 回滚代码时恢复上一版本二进制。若新版本已经执行了旧二进制不理解的 schema migration，则必须同时恢复发布前数据库；不能只降级二进制。回滚后再次执行健康检查和一条真实读取，不以“进程正在运行”代替业务验证。

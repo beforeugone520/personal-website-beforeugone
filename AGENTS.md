@@ -5,6 +5,7 @@
 - This repository is the static source for `https://beforeugone.com/`.
 - Production remains on GitHub Pages with Cloudflare managing the custom domain/edge. Do not migrate the static site to the Azure VM unless the user explicitly changes this decision.
 - Phase 1 is deployed on Hermes/Azure: the Go/SQLite API serves `https://api.beforeugone.com` behind Cloudflare and Caddy, while `assets/site-dynamic.js` remains on GitHub Pages. Keep the remaining production checks in `docs/backend-operations.md` visible until they pass.
+- Hermes OpenClaw may act as a server operator under `docs/openclaw-backend-operations.md`; that does not mean the website is connected to OpenClaw. Preserve the runbook's confirmation boundaries and never reveal server secret values.
 - The custom OpenClaw messaging surface is still planned, not implemented. Read `docs/handoff-personal-backend.md` before starting Phase 2 or later work.
 
 ## Frontend Workflow
@@ -25,6 +26,7 @@
 - Production binds to `127.0.0.1:8787`; only Caddy receives public traffic. The public Caddy route must continue to hide `/v1/admin/*`.
 - Keep the Caddy Cloudflare CIDRs current and preserve its overwritten `X-BeforeU-Client-IP`; the Go service trusts that header only from loopback.
 - Use `scripts/backup-backend.sh` or the matching systemd timer for WAL-consistent backups. A raw copy of the live `.db` file is not an acceptable backup.
+- Keep `docs/openclaw-backend-operations.md` synchronized with deployed service paths, build checksums, authority boundaries, and outstanding operational work.
 
 ## Backend Boundaries
 
