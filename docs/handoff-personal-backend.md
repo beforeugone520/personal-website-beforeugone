@@ -1,7 +1,7 @@
 # BeforeUgone 个人站动态后端与 Agent 中枢 Handoff
 
-> 状态：Phase 1 已在仓库本地实现，尚未部署到 Hermes/Azure，也未完成生产验收；Phase 2 至 Phase 4 仍为方案
-> 定稿日期：2026-07-12
+> 状态：Phase 1 已部署到 Hermes/Azure，核心生产路径已验收；真实浏览器 Turnstile 写入和代码回滚演练仍待完成；Phase 2 至 Phase 4 仍为方案
+> 更新日期：2026-07-13
 
 ## 1. 目标
 
@@ -22,8 +22,8 @@
 - 仓库：`beforeugone520/personal-website-beforeugone`。
 - 前端：主体为静态 HTML/CSS/JavaScript；主题滑块是独立 Vue/Vite 子工程。
 - 已有动态感：GitHub 仓库动态、贡献热力图、终端模式、Konami 彩蛋。
-- 仓库现有 Phase 1 Go/SQLite API、静态动态层和部署样例；生产域名目前仍没有经过验收的自建业务 API。
-- Hermes 已安装 Caddy 2.11.4 和 `sqlite3`，但 systemd/Caddy 配置、secret、DNS 和数据恢复演练尚未应用。
+- Phase 1 Go/SQLite API 已在 Hermes 通过 systemd 运行，生产域名为 `https://api.beforeugone.com`。
+- Caddy、真实 secret、Cloudflare DNS/Full (strict)、Turnstile 和 GitHub webhook 已应用；备份校验、临时恢复和重启持久化检查已通过。
 - 决策：不把静态前端迁到 Azure，Azure 只承载轻量 API、消息中继和 OpenClaw 集成。
 - Phase 1 的实际接口以 [`backend-api.md`](backend-api.md) 为准，部署与恢复以 [`backend-operations.md`](backend-operations.md) 为准。
 
@@ -31,7 +31,7 @@
 
 ### 3.1 个人站动态层
 
-动态层候选能力如下；Phase 1 本地实现了第 1 至 4 项，第 5 至 8 项尚未实现：
+动态层候选能力如下；Phase 1 已上线第 1 至 4 项，第 5 至 8 项尚未实现：
 
 1. `Now`：首页显示站主当前状态和更新时间；支持从 OpenClaw 或管理端修改。
 2. `Ship Log`：聚合 GitHub Push/Release 与手动记录，形成简洁的完成事项时间流。
@@ -42,19 +42,17 @@
 7. 时间胶囊：内容在指定日期自动公开。
 8. Idea Incubator：公开想法、状态和轻量“我也想要”计数。
 
-现有终端增加动态命令：
+现有终端已增加这些动态命令：
 
 ```text
 now
 ship
-random
 guestbook
 status
-ask <question>
 uptime
 ```
 
-`ask` 只能检索公开博客、项目介绍和公开 README；不得连接 OpenClaw 私人记忆、系统工具或服务器文件。
+`random` 和 `ask <question>` 仍是后续候选。实现 `ask` 时只能检索公开博客、项目介绍和公开 README；不得连接 OpenClaw 私人记忆、系统工具或服务器文件。
 
 ### 3.2 BeforeU Relay
 
@@ -212,11 +210,11 @@ GET  /v1/events/ws
 - [x] 实现 `Now`、`Ship Log`、留言审核、轻回应和 GitHub webhook。
 - [x] 主站增加无阻塞动态区域；API 失败时保留静态体验。
 - [x] 增加一致性备份脚本、健康检查、应用层限流、幂等和基础审计。
-- [ ] 在 Hermes/Azure 安装服务并配置真实 secret。
-- [ ] 配置 Cloudflare DNS、Full (strict)、Turnstile、边缘限流和 GitHub webhook。
-- [ ] 完成重启、API 故障、真实留言审核、备份恢复和回滚演练。
+- [x] 在 Hermes/Azure 安装服务并配置真实 secret。
+- [x] 配置 Cloudflare DNS、Full (strict)、Turnstile、边缘限流和 GitHub webhook。
+- [ ] 完成真实浏览器留言审核闭环、Azure NSG 复核和代码回滚演练；重启持久化、API 故障降级和临时备份恢复已通过。
 
-验收：主站动态功能可用，服务器重启后数据不丢，API 故障不拖垮首页。当前只完成本地代码与自动测试，生产验收尚未达成。
+验收：主站动态功能可用，服务器重启后数据不丢，API 故障不拖垮首页。核心生产路径已于 2026-07-13 通过；剩余项见上方清单和 [`backend-operations.md`](backend-operations.md) 的生产验收记录。
 
 ### Phase 2：Relay PWA
 

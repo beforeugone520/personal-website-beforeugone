@@ -1,6 +1,6 @@
 # Phase 1 API Contract
 
-> Contract for the implementation under [`backend/`](../backend). Production base URL is planned as `https://api.beforeugone.com`; deployment has not yet been completed.
+> Contract for the production implementation under [`backend/`](../backend). Production base URL is `https://api.beforeugone.com`.
 
 ## Conventions
 

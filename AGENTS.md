@@ -4,7 +4,7 @@
 
 - This repository is the static source for `https://beforeugone.com/`.
 - Production remains on GitHub Pages with Cloudflare managing the custom domain/edge. Do not migrate the static site to the Azure VM unless the user explicitly changes this decision.
-- Phase 1 dynamic-site code now exists locally under `backend/` and `assets/site-dynamic.js`, but it has not been deployed or production-verified. Do not describe it as live until the checks in `docs/backend-operations.md` have passed against the real domain.
+- Phase 1 is deployed on Hermes/Azure: the Go/SQLite API serves `https://api.beforeugone.com` behind Cloudflare and Caddy, while `assets/site-dynamic.js` remains on GitHub Pages. Keep the remaining production checks in `docs/backend-operations.md` visible until they pass.
 - The custom OpenClaw messaging surface is still planned, not implemented. Read `docs/handoff-personal-backend.md` before starting Phase 2 or later work.
 
 ## Frontend Workflow

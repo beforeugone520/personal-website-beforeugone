@@ -1,6 +1,6 @@
 # Phase 1 后端部署与运维
 
-> 当前状态：仓库内提供本地实现和部署样例；Hermes 已安装 Caddy 2.11.4 和 `sqlite3`，但本文的服务、配置和域名切流尚未应用或验收。生产站仍由 GitHub Pages 托管，本文只部署 `api.beforeugone.com`。
+> 当前状态：Phase 1 已于 2026-07-13 部署到 Hermes；`api.beforeugone.com` 经 Cloudflare/Caddy 提供服务，`beforeugone.com` 仍由 GitHub Pages 托管。核心生产路径已验收，真实浏览器 Turnstile 写入和代码回滚演练仍待完成。
 
 ## 1. 边界与拓扑
 
@@ -118,6 +118,16 @@ API 先通过外部健康检查后，再发布 GitHub Pages 的动态入口：
 5. API 基址或 site key 改动仍作为静态站提交到 GitHub Pages；不能为了注入配置把页面搬到 VM。
 
 动态读取有短超时并各自降级。上线时仍要实际断开 API 复核首页和文章正文，而不是只检查正常路径。
+
+### 2026-07-13 生产验收记录
+
+- `beforeu-api`、Caddy、备份 timer 均已启用；OpenClaw Gateway 仍只监听 `127.0.0.1:18789`。
+- Cloudflare DNS 与 Full (strict) 已生效；公网 `/healthz`、`/readyz` 和所有公开读取返回 `200`，直连 origin 返回 `403`，公网管理路由返回 `404`。
+- 已写入生产 Turnstile site key/secret，缺失 token 的公开写入返回 `400 turnstile_failed`。自动化浏览器无法取得真实 widget token，因此仍需用普通浏览器完成一次留言提交、审核、公开和移除闭环。
+- GitHub webhook 的 ping 和真实 push 均成功；重送同一 delivery 后 Ship 条目数不变，幂等验证通过。
+- 已生成在线 SQLite 备份，校验 SHA-256，将归档解压到临时数据库并通过 `PRAGMA quick_check`；服务重启后 Now/Ship 数据仍存在。
+- GitHub Pages 已发布动态前端；本地浏览器回归覆盖留言和回应写入，生产浏览器回归覆盖桌面、390/320 px、终端、动态读取和 API 失败降级。真实 Turnstile token 写入仍按上项保留。
+- Azure NSG 的 Cloudflare-only 来源限制尚未从本机控制面复核；Caddy 的 Cloudflare CIDR gate 已验证会拒绝直接 origin 请求。
 
 ## 5. Turnstile
 

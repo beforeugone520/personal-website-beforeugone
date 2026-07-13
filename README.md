@@ -24,9 +24,9 @@
 
 ## 动态后端
 
-Phase 1 已在仓库内实现实时状态、Ship Log、留言审核、文章轻回应、GitHub webhook、健康检查、限流和基础审计。当前只是本地实现，**尚未部署到 Hermes/Azure，也没有完成真实 Cloudflare/Turnstile 验收**。
+Phase 1 已部署到 Hermes/Azure，并通过 Cloudflare/Caddy 由 `https://api.beforeugone.com` 提供 Now、Ship Log、留言审核、文章轻回应、GitHub webhook、健康检查、限流和基础审计。
 
-静态站不迁移，仍由 GitHub Pages 承载；Azure 只计划运行 `api.beforeugone.com` 的轻量 Go/SQLite 服务。后续 OpenClaw 私人消息中枢仍处于规划阶段。
+静态站不迁移，仍由 GitHub Pages 承载；Azure 只运行 `api.beforeugone.com` 的轻量 Go/SQLite 服务。后续 OpenClaw 私人消息中枢仍处于规划阶段。
 
 架构和后续阶段见 [`docs/handoff-personal-backend.md`](docs/handoff-personal-backend.md)，实际 API 与部署步骤分别见 [`docs/backend-api.md`](docs/backend-api.md) 和 [`docs/backend-operations.md`](docs/backend-operations.md)。
 
@@ -43,7 +43,7 @@ STATIC_DIR=.. \
 go run .
 ```
 
-然后打开 `http://127.0.0.1:8787/`。上述不安全写入开关只有在同时设置 `STATIC_DIR` 时才可用；生产必须保持关闭，并配置 Turnstile，否则公开写接口会以 `503` 拒绝请求。环境变量全集见 [`backend/.env.example`](backend/.env.example)。
+然后打开 `http://127.0.0.1:8787/`。本地页面会跳过生产 Turnstile widget；上述不安全写入开关只有在同时设置 `STATIC_DIR` 时才可用。生产必须保持关闭并配置 Turnstile，否则公开写接口会以 `503` 拒绝请求。环境变量全集见 [`backend/.env.example`](backend/.env.example)。
 
 ## 加一篇新文章
 
