@@ -151,7 +151,8 @@
   }
 
   function createTurnstileController(host, statusNode) {
-    var siteKey = metaContent('beforeu-turnstile-site-key');
+    var isLocalPreview = location.hostname === 'localhost' || location.hostname === '127.0.0.1';
+    var siteKey = isLocalPreview ? '' : metaContent('beforeu-turnstile-site-key');
     var token = '';
     var widget = null;
     function render() {

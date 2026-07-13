@@ -131,7 +131,7 @@
   function closeTerm() {
     if (!term || term.hidden) return;
     term.hidden = true; document.documentElement.classList.remove('term-open');
-    if (lastFocus && typeof lastFocus.focus === 'function') setTimeout(function () { lastFocus.focus(); }, 0);
+    if (lastFocus && typeof lastFocus.focus === 'function') lastFocus.focus();
   }
   function trapTermFocus(event) {
     if (event.key === 'Escape') { event.preventDefault(); closeTerm(); return; }
