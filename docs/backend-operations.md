@@ -39,20 +39,20 @@ OpenClaw Gateway -> 127.0.0.1:18789（Phase 1 不连接）
 | `GITHUB_WEBHOOK_SECRET` | 独立随机值 | GitHub webhook HMAC secret |
 | `GITHUB_ALLOWED_REPOSITORIES` | `owner/repo` 逗号列表 | 与 webhook secret 同时配置或同时留空 |
 | `GITHUB_USERNAME` | `beforeugone520` | 后台 activity snapshot 读取的公开 GitHub 用户名 |
-| `GITHUB_API_TOKEN` | 最小权限的公开只读 token | 可选、仅服务端；禁止 classic `read:user`/`user`/`repo` scope、私有仓库访问及可读取非公开贡献的 fine-grained account permission；留空时保留旧缓存但不能刷新 |
+| `GITHUB_API_TOKEN` | 可选的最小权限公开只读 token | 配置时通过官方 GraphQL 刷新，禁止 classic `read:user`/`user`/`repo` scope、私有仓库访问及可读取非公开贡献的 fine-grained account permission；留空时通过 GitHub REST 与公开 contributions HTML 刷新 |
 | `GITHUB_REFRESH_INTERVAL` | `15m` | 后台初次刷新后的周期；正数 Go duration |
-| `GITHUB_REQUEST_TIMEOUT` | `10s` | 每次 GitHub GraphQL 请求的超时；正数 Go duration |
+| `GITHUB_REQUEST_TIMEOUT` | `10s` | 每次 GitHub 上游请求的超时；正数 Go duration |
 | `STATIC_DIR` | 留空 | 仅用于本地开发；生产静态站仍在 GitHub Pages |
 | `PUBLIC_WRITE_RATE_LIMIT` | `10` | 每个窗口允许的公共写请求数 |
 | `PUBLIC_WRITE_RATE_WINDOW` | `1m` | Go duration，例如 `30s`、`1m` |
 | `TRUST_PROXY_HEADERS` | `true` | 只信任 loopback Caddy 覆盖写入的 `X-BeforeU-Client-IP` |
 | `SHUTDOWN_TIMEOUT` | `10s` | 优雅关闭等待时间 |
 
-生成 `ADMIN_TOKEN`、`ANONYMIZATION_SECRET` 和 webhook secret 时分别执行 `openssl rand -hex 32`，三个值不能复用。程序要求前两者以及启用后的 webhook secret 至少 32 个字符。`GITHUB_API_TOKEN` 应在 GitHub 中单独创建并限制为公开读取；不要授予 classic `read:user`、`user`、`repo` scope、任何私有仓库访问或可读取非公开贡献的 fine-grained account permission。服务会拒绝响应头明确暴露这些 broad classic scope 的 token，但部署者仍必须核对 fine-grained 权限。它不能复用 webhook secret 或任何管理 token。`TURNSTILE_SECRET` 为空时读取接口仍可用，但所有公开写入都会返回 `503`；生产不得借助本地预览开关绕过。不要把真实值写回 `.env.example`。
+生成 `ADMIN_TOKEN`、`ANONYMIZATION_SECRET` 和 webhook secret 时分别执行 `openssl rand -hex 32`，三个值不能复用。程序要求前两者以及启用后的 webhook secret 至少 32 个字符。`GITHUB_API_TOKEN` 不是上线前提；留空时后台使用无认证的 GitHub REST 与公开 contributions HTML 刷新。若以后配置 token，应在 GitHub 中单独创建并限制为公开读取；不要授予 classic `read:user`、`user`、`repo` scope、任何私有仓库访问或可读取非公开贡献的 fine-grained account permission。服务会拒绝响应头明确暴露这些 broad classic scope 的 token，但部署者仍必须核对 fine-grained 权限。它不能复用 webhook secret 或任何管理 token。`TURNSTILE_SECRET` 为空时读取接口仍可用，但所有公开写入都会返回 `503`；生产不得借助本地预览开关绕过。不要把真实值写回 `.env.example`。
 
 ## 3. 构建与首次安装
 
-在开发机或 CI 构建，避免在 1 GB 的 Hermes 上做无必要的编译：
+后端模块要求 Go 1.25.0 或更新版本；生产候选使用仍受支持的最新补丁版工具链。在开发机或 CI 构建，避免在 1 GB 的 Hermes 上做无必要的编译：
 
 ```bash
 cd backend
@@ -141,11 +141,11 @@ API 先通过外部健康检查后，再发布 GitHub Pages 的动态入口：
 
 1. 在开发机对包含 `0002_github_activity_cache.sql` 的候选版本运行 `go test ./...`、`go vet ./...`，构建并记录 commit 与 SHA-256。
 2. 先完成并校验一次 WAL 一致性备份，再按版本化二进制流程部署；启动后只读确认 `schema_migrations` 已记录 `0002_github_activity_cache.sql`，且进程没有重启循环。
-3. 经用户确认后，在 `/etc/beforeu-api.env` 增加 `GITHUB_USERNAME`、`GITHUB_REFRESH_INTERVAL`、`GITHUB_REQUEST_TIMEOUT`，并从受控密码管理位置写入只允许公开读取、明确不含 `read:user`/`user`/`repo` 或私有访问权限的 `GITHUB_API_TOKEN`；不得在终端回显、聊天、日志或仓库中展示 token。
-4. 重启后确认后台首次 GraphQL 刷新成功，SQLite 中存在 last-good singleton；随后确认周期刷新会原子更新时间且失败不会清空旧快照。
-5. 验证 local 与 public `GET /v1/public/github` 返回完整数据和 `Cache-Control: public, max-age=300, stale-while-revalidate=3600`；在无可用 token 的受控测试中，匹配用户名的旧快照应继续返回 `200`，空缓存或用户名不匹配的缓存应返回 `503`。
+3. 经用户确认后，在 `/etc/beforeu-api.env` 增加 `GITHUB_USERNAME`、`GITHUB_REFRESH_INTERVAL`、`GITHUB_REQUEST_TIMEOUT`；`GITHUB_API_TOKEN` 可留空以启用无认证 fallback。若选择配置 token，只能从受控密码管理位置写入公开只读 token，并明确排除 `read:user`/`user`/`repo`、私有访问和可读取非公开贡献的权限；不得在终端回显、聊天、日志或仓库中展示 token。
+4. 重启后确认后台首次刷新成功并记录实际数据源模式，SQLite 中存在 last-good singleton；随后确认 15 分钟周期刷新会原子更新时间且失败不会清空旧快照。
+5. 在无 token 模式下确认 GitHub REST 仓库元数据与公开 rolling contributions HTML 能生成完整快照；再以受控的 HTML 解析或上游失败验证匹配用户名的旧快照继续返回 `200`，`/healthz` 与 `/readyz` 不受影响，空缓存或用户名不匹配的缓存返回 `503`。同时验证 local 与 public `GET /v1/public/github` 的完整数据和 `Cache-Control: public, max-age=300, stale-while-revalidate=3600`。
 6. 发布 GitHub Pages 前端后，在桌面、390 px、320 px、深浅主题、键盘和 reduced-motion 下检查 activity 布局；断开 API 时静态作品与正文仍须可读。
-7. 发送一次受控的已签名、白名单内 push webhook，确认 Ship delivery 仍幂等，且可唤醒刷新但 webhook 响应不等待 GitHub GraphQL。
+7. 发送一次受控的已签名、白名单内 push webhook，确认 Ship delivery 仍幂等，且可唤醒刷新但 webhook 响应不等待 GitHub 上游。
 8. 观察至少 10 分钟的 API journal、Caddy 5xx、GitHub refresh 错误、内存和数据库增长，再把本文件、OpenClaw 手册中的生产基线、commit 与 checksum 更新为实测值。
 
 ## 5. Turnstile
@@ -161,9 +161,9 @@ API 先通过外部健康检查后，再发布 GitHub Pages 的动态入口：
 
 ### Activity snapshot
 
-浏览器只调用 `GET /v1/public/github`，不得直接调用 GitHub GraphQL、把 `GITHUB_API_TOKEN` 放进静态资源，或把公开请求变成同步 GitHub 代理。配置 token 后，服务启动会立即尝试刷新，此后按 `GITHUB_REFRESH_INTERVAL` 运行；每次请求受 `GITHUB_REQUEST_TIMEOUT` 限制。官方 GitHub GraphQL 返回成功且校验完整后，才原子替换 `github_activity_cache` 的 last-good singleton。
+浏览器只调用 `GET /v1/public/github`，不得直接调用 GitHub GraphQL、REST 或 contributions HTML，不得把 `GITHUB_API_TOKEN` 放进静态资源，也不得把公开请求变成同步 GitHub 代理。服务启动会立即尝试刷新，此后按 `GITHUB_REFRESH_INTERVAL` 运行；每次上游请求受 `GITHUB_REQUEST_TIMEOUT` 限制。配置 token 时使用官方 GitHub GraphQL；未配置时组合 GitHub REST 的公开仓库元数据与 GitHub 公开 rolling contributions HTML，且包括 Webhook 唤醒在内的无 token 尝试至少间隔 2 分钟。任一模式只有在结果完整并通过校验后，才原子替换 `github_activity_cache` 的 last-good singleton。
 
-上游失败时保留旧快照并记录去敏错误；有与当前 `GITHUB_USERNAME` 匹配的快照时 public route 继续返回 `200` 和原 `refreshed_at`，没有匹配快照时返回 `503`。`/healthz` 不依赖 GitHub，`/readyz` 仍只表示 SQLite 可用；activity 新鲜度要单独看响应中的 `refreshed_at` 和 refresh 日志。
+rolling contributions HTML 是 GitHub 的内部公开网页接口，不是稳定的版本化 API；页面结构变化或解析失败按普通上游刷新失败处理。此时保留旧快照并记录去敏错误；有与当前 `GITHUB_USERNAME` 匹配的快照时 public route 继续返回 `200` 和原 `refreshed_at`，没有匹配快照时返回 `503`。`/healthz` 不依赖 GitHub，`/readyz` 仍只表示 SQLite 可用；HTML 解析失败不会改变二者，activity 新鲜度要单独看响应中的 `refreshed_at` 和 refresh 日志。
 
 ### Webhook
 
@@ -177,7 +177,7 @@ API 先通过外部健康检查后，再发布 GitHub Pages 的动态入口：
 
 同时把完整的 `owner/repository` 写入 `GITHUB_ALLOWED_REPOSITORIES`。后端必须同时通过 `X-Hub-Signature-256`、`X-GitHub-Delivery` 去重、事件类型和仓库白名单检查，不能只依赖 GitHub 来源 IP。重送相同 delivery 不应生成第二条 Ship；不支持的事件返回 `400` 且不写库。
 
-已验证且接受的 push/release delivery 可以向后台 refresher 发送非阻塞唤醒信号。该信号只是尽快刷新 activity 的提示：Webhook 的成功、幂等与响应时间不能依赖 GitHub GraphQL 是否可用。
+已验证且接受的 push/release delivery 可以向后台 refresher 发送非阻塞唤醒信号。无 token 模式会合并 2 分钟窗口内的重复尝试，避免耗尽 GitHub 未认证 REST 限额。该信号只是尽快刷新 activity 的提示：Webhook 的成功、幂等与响应时间不能依赖任一 GitHub 上游是否可用。
 
 ## 7. 健康检查
 
@@ -193,7 +193,7 @@ sudo -u beforeu-api sqlite3 -readonly /var/lib/beforeu-api/beforeu.db \
 - `/healthz` 表示进程及 HTTP handler 存活，不应依赖外部服务。
 - `/readyz` 会检查 SQLite；失败时 Caddy 不应继续把新流量发给该实例。
 - 外部监控使用 `/healthz`，部署与重启判断使用 `/readyz`。
-- GitHub activity 应额外检查 HTTP 状态、`Cache-Control` 和 `data.refreshed_at`；不要把旧快照误报成服务宕机，也不要仅凭 `200` 断言后台刷新正常。
+- GitHub activity 应额外检查 HTTP 状态、`Cache-Control` 和 `data.refreshed_at`；不要把旧快照或 contributions HTML 解析失败误报成服务宕机，也不要仅凭 `200` 断言后台刷新正常。
 
 还应抽查首页：API 不可用时 `Now`、Ship Log、留言等动态区静默隐藏或显示局部错误，静态作品、文章与联系方式必须仍可阅读。
 

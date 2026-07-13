@@ -3,11 +3,13 @@ package main
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"io"
 	"log/slog"
 	"net/http"
 	"net/http/httptest"
 	"strings"
+	"sync/atomic"
 	"testing"
 	"time"
 )
@@ -64,6 +66,113 @@ func TestGitHubActivityClientFetchesPublicSnapshot(t *testing.T) {
 	}
 	if len(snapshot.Repositories) != 1 || snapshot.Repositories[0].FullName != "beforeugone520/site" || snapshot.Repositories[0].LanguageColor != "#00ADD8" || snapshot.Repositories[0].Archived {
 		t.Fatalf("repositories = %#v", snapshot.Repositories)
+	}
+}
+
+func TestGitHubActivityClientFetchesTokenlessPublicSnapshot(t *testing.T) {
+	var requests atomic.Int32
+	upstream := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		requests.Add(1)
+		if r.Method != http.MethodGet || r.Header.Get("Authorization") != "" || r.Header.Get("User-Agent") != githubUserAgent {
+			t.Errorf("request = %s %s headers=%v", r.Method, r.URL.String(), r.Header)
+		}
+		switch r.URL.Path {
+		case "/users/beforeugone520/repos":
+			if r.URL.Query().Get("type") != "owner" || r.URL.Query().Get("sort") != "pushed" ||
+				r.URL.Query().Get("direction") != "desc" || r.URL.Query().Get("per_page") != "100" {
+				t.Errorf("repository query = %s", r.URL.RawQuery)
+			}
+			writeJSON(w, http.StatusOK, []any{
+				map[string]any{
+					"name": "site", "full_name": "beforeugone520/site", "description": "Personal site",
+					"html_url": "https://github.com/beforeugone520/site", "language": "Go",
+					"stargazers_count": 4, "pushed_at": "2026-07-13T10:00:00Z",
+					"archived": false, "fork": false, "private": false,
+					"owner": map[string]any{"login": "beforeugone520"},
+				},
+				map[string]any{
+					"name": "older", "full_name": "beforeugone520/older", "description": "Older project",
+					"html_url": "https://github.com/beforeugone520/older", "language": "TypeScript",
+					"stargazers_count": 2, "pushed_at": "2026-06-01T10:00:00Z",
+					"archived": false, "fork": false, "private": false,
+					"owner": map[string]any{"login": "beforeugone520"},
+				},
+				map[string]any{
+					"name": "fork", "full_name": "beforeugone520/fork", "html_url": "https://github.com/beforeugone520/fork",
+					"archived": false, "fork": true, "private": false,
+					"owner": map[string]any{"login": "beforeugone520"},
+				},
+			})
+		case "/users/beforeugone520/contributions":
+			if r.Header.Get("Accept-Language") != "en-US" || !strings.Contains(r.Header.Get("Accept"), "text/html") {
+				t.Errorf("contributions headers = %v", r.Header)
+			}
+			w.Header().Set("Content-Type", "text/html; charset=utf-8")
+			_, _ = io.WriteString(w, testGitHubContributionsHTML("beforeugone520", 365))
+		default:
+			http.NotFound(w, r)
+		}
+	}))
+	defer upstream.Close()
+
+	client := newGitHubActivityClient("", time.Second)
+	client.restEndpoint = upstream.URL
+	client.contributionsEndpoint = upstream.URL
+	snapshot, err := client.Fetch(context.Background(), "beforeugone520")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if requests.Load() != 2 || snapshot.Username != "beforeugone520" || snapshot.TotalContributions != 10 || len(snapshot.Contributions) != 365 {
+		t.Fatalf("requests=%d snapshot=%#v", requests.Load(), snapshot)
+	}
+	if len(snapshot.Repositories) != 2 || snapshot.Repositories[0].FullName != "beforeugone520/site" ||
+		snapshot.Repositories[0].LanguageColor != "#00ADD8" || snapshot.Repositories[1].FullName != "beforeugone520/older" {
+		t.Fatalf("repositories = %#v", snapshot.Repositories)
+	}
+}
+
+func TestParseGitHubContributionsRejectsIncompleteOrMismatchedHTML(t *testing.T) {
+	valid := testGitHubContributionsHTML("beforeugone520", 365)
+	tests := []struct {
+		name string
+		body string
+	}{
+		{name: "wrong identity", body: strings.Replace(valid, "/users/beforeugone520/contributions", "/users/someone-else/contributions", 1)},
+		{name: "wrong total", body: strings.Replace(valid, "10 contributions in the last year", "11 contributions in the last year", 1)},
+		{name: "missing day", body: strings.Replace(valid, `<td id="day-000" class="ContributionCalendar-day" data-date="2025-07-14" data-level="0"></td>`, "", 1)},
+		{name: "duplicate date", body: strings.Replace(valid, `data-date="2025-07-15"`, `data-date="2025-07-14"`, 1)},
+		{name: "missing tooltip", body: strings.Replace(valid, `<tool-tip for="day-000">No contributions on 2025-07-14</tool-tip>`, "", 1)},
+	}
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			if _, _, err := parseGitHubContributions([]byte(test.body), "beforeugone520"); err == nil {
+				t.Fatal("expected invalid contributions HTML error")
+			}
+		})
+	}
+}
+
+func TestGitHubActivityRefresherThrottlesTokenlessAttempts(t *testing.T) {
+	var requests atomic.Int32
+	upstream := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		requests.Add(1)
+		w.WriteHeader(http.StatusServiceUnavailable)
+	}))
+	defer upstream.Close()
+
+	refresher := newGitHubActivityRefresher(Config{
+		GitHubUsername: "beforeugone520", GitHubRefreshInterval: time.Hour, GitHubRequestTimeout: time.Second,
+	}, nil, slog.New(slog.NewTextHandler(io.Discard, nil)))
+	refresher.client.restEndpoint = upstream.URL
+	now := time.Date(2026, 7, 13, 12, 0, 0, 0, time.UTC)
+	refresher.now = func() time.Time { return now }
+
+	refresher.refresh(context.Background())
+	refresher.refresh(context.Background())
+	now = now.Add(githubPublicMinimumRefresh)
+	refresher.refresh(context.Background())
+	if requests.Load() != 2 {
+		t.Fatalf("tokenless refresh requests = %d, want 2", requests.Load())
 	}
 }
 
@@ -214,6 +323,41 @@ func testGitHubWeeks() []any {
 		weeks = append(weeks, map[string]any{"contributionDays": days})
 	}
 	return weeks
+}
+
+func testGitHubContributionsHTML(username string, days int) string {
+	start := time.Date(2025, 7, 14, 0, 0, 0, 0, time.UTC)
+	var cells strings.Builder
+	var tooltips strings.Builder
+	total := 0
+	for offset := 0; offset < days; offset++ {
+		date := start.AddDate(0, 0, offset).Format("2006-01-02")
+		count := 0
+		if offset < 5 {
+			count = offset
+		}
+		level := count
+		if level > 4 {
+			level = 4
+		}
+		id := fmt.Sprintf("day-%03d", offset)
+		fmt.Fprintf(&cells, `<td id="%s" class="ContributionCalendar-day" data-date="%s" data-level="%d"></td>`, id, date, level)
+		switch count {
+		case 0:
+			fmt.Fprintf(&tooltips, `<tool-tip for="%s">No contributions on %s</tool-tip>`, id, date)
+		case 1:
+			fmt.Fprintf(&tooltips, `<tool-tip for="%s">1 contribution on %s</tool-tip>`, id, date)
+		default:
+			fmt.Fprintf(&tooltips, `<tool-tip for="%s">%d contributions on %s</tool-tip>`, id, count, date)
+		}
+		total += count
+	}
+	end := start.AddDate(0, 0, days-1).Format("2006-01-02")
+	return fmt.Sprintf(`<!doctype html><html><body>
+<div class="ContributionCalendar" data-graph-url="/users/%s/contributions" data-url="/%s" data-from="%s 00:00:00 UTC" data-to="%s 00:00:00 UTC">
+<table><tbody><tr>%s</tr></tbody></table>%s</div>
+<h2 id="js-contribution-activity-description">%d contributions in the last year</h2>
+</body></html>`, username, username, start.Format("2006-01-02"), end, cells.String(), tooltips.String(), total)
 }
 
 func waitForGitHubSnapshot(t *testing.T, store *Store, username string) {

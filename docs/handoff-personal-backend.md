@@ -38,7 +38,7 @@
 2. `Ship Log`：聚合 GitHub Push/Release 与手动记录，形成简洁的完成事项时间流。
 3. 留一句话：匿名或昵称留言，先审后发，可显示站主回复。
 4. 文章轻回应：有共鸣、学到了、想看后续、没看懂；无需账号，每设备每篇每类一次。
-5. GitHub activity snapshot：后端使用官方 GraphQL 周期读取公开贡献与仓库元数据，SQLite 只保留完整 last-good snapshot，静态前端只调用 `GET /v1/public/github`。
+5. GitHub activity snapshot：后端配置可选 token 时使用官方 GraphQL，未配置时组合 GitHub REST 公开仓库元数据与公开 rolling contributions HTML；SQLite 只保留完整 last-good snapshot，静态前端只调用 `GET /v1/public/github`。
 6. 项目催更：按项目计数，按周汇总，不逐次打扰。
 7. 隐私友好统计：只保留按日聚合的页面、来源和大区数据，不保存完整 IP，不做浏览器指纹。
 8. 时间胶囊：内容在指定日期自动公开。
@@ -89,7 +89,7 @@ Caddy -> beforeu-api -> SQLite
 OpenClaw Gateway 127.0.0.1:18789（独立运行，仅由 OpenClaw 作为运维者使用）
 ```
 
-本次 GitHub activity 扩展发布后，浏览器只从 `beforeu-api` 读取公开快照；后台使用服务端 token 调用官方 GitHub GraphQL，并把完整 last-good snapshot 存入同一 SQLite。外部刷新失败不会把 GitHub 请求转嫁给访客，也不会清空已有快照。该路径在完成 [`backend-operations.md`](backend-operations.md) 的待发布清单前不属于当前生产架构。
+本次 GitHub activity 扩展发布后，浏览器只从 `beforeu-api` 读取公开快照；后台在配置可选服务端 token 时调用官方 GitHub GraphQL，否则组合 GitHub REST 与公开 rolling contributions HTML，并把完整 last-good snapshot 存入同一 SQLite。HTML 是 GitHub 的内部公开网页接口，解析或外部刷新失败不会把 GitHub 请求转嫁给访客、清空已有快照或影响 API 健康就绪状态。该路径在完成 [`backend-operations.md`](backend-operations.md) 的待发布清单前不属于当前生产架构。
 
 后续 Phase 2 至 Phase 4 才会引入 Relay：
 
@@ -151,7 +151,7 @@ Phase 1 已在生产实现：
 
 | 表 | 用途 |
 | --- | --- |
-| `github_activity_cache` | 官方 GitHub GraphQL 公开 activity 的 singleton last-good JSON snapshot 与抓取时间 |
+| `github_activity_cache` | 后台 GitHub 公开 activity 的 singleton last-good JSON snapshot 与抓取时间 |
 
 后续阶段草案：
 
@@ -233,7 +233,7 @@ GET  /v1/events/ws
 - 初始设备通过 Tailscale 或服务器 CLI 产生的一次性短码配对。
 - 每台设备使用独立、可撤销的凭据，不共享管理员密码。
 - 公共写接口使用 Cloudflare Turnstile、可信客户端 IP 限流、正文长度限制和审核队列；Turnstile secret 缺失时必须关闭写入而不是绕过验证。
-- `GITHUB_API_TOKEN` 只用于后端官方 GraphQL 刷新，必须使用公开读取所需的最低权限，禁止 classic `read:user`/`user`/`repo`、私有仓库访问和可读取非公开贡献的 fine-grained account permission；不得进入 Git、浏览器、静态资源、日志、OpenClaw memory 或 webhook payload。
+- 可选的 `GITHUB_API_TOKEN` 只用于后端官方 GraphQL 刷新；若配置，必须使用公开读取所需的最低权限，禁止 classic `read:user`/`user`/`repo`、私有仓库访问和可读取非公开贡献的 fine-grained account permission；不得进入 Git、浏览器、静态资源、日志、OpenClaw memory 或 webhook payload。留空时使用无认证 REST 与公开 contributions HTML fallback，不阻塞发布。
 - 推送通知默认不携带敏感正文，只提示“有新消息”，打开客户端后再拉取。
 - Phase 1 公共匿名写接口使用幂等键，GitHub webhook 使用 delivery ID 去重；后续消息、任务和审批写接口也必须在实现时设计幂等语义。
 - 审批操作写入审计日志；危险动作默认不得自动批准。
@@ -250,7 +250,7 @@ GET  /v1/events/ws
 - [x] 增加一致性备份脚本、健康检查、应用层限流、幂等和基础审计。
 - [x] 在 Hermes/Azure 安装服务并配置真实 secret。
 - [x] 配置 Cloudflare DNS、Full (strict)、Turnstile、边缘限流和 GitHub webhook。
-- [ ] 部署 GitHub activity cache migration、后台初次/周期刷新和 `GET /v1/public/github`；配置最小权限 token，发布前端并完成缓存、失败保留、Webhook 唤醒和响应式验收。
+- [ ] 部署 GitHub activity cache migration、后台初次/周期刷新和 `GET /v1/public/github`；以无 token fallback 完成首次刷新，发布前端并完成缓存、失败保留、Webhook 唤醒和响应式验收。
 - [ ] 完成真实浏览器留言审核闭环、Azure NSG 复核和代码回滚演练；重启持久化、API 故障降级和临时备份恢复已通过。
 
 验收：主站动态功能可用，服务器重启后数据不丢，API 故障不拖垮首页。原 Phase 1 核心生产路径已于 2026-07-13 通过；GitHub activity 扩展和其他剩余项见上方清单及 [`backend-operations.md`](backend-operations.md) 的生产验收/待发布记录。

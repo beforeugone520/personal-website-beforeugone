@@ -27,13 +27,13 @@
 
 Phase 1 已部署到 Hermes/Azure，并通过 Cloudflare/Caddy 由 `https://api.beforeugone.com` 提供 Now、Ship Log、留言审核、文章轻回应、GitHub webhook、健康检查、限流和基础审计。
 
-仓库已加入由后端官方 GitHub GraphQL 周期刷新、SQLite 保存 last-good snapshot 的 GitHub activity 路径；该扩展及其新版首页尚待生产部署、server-only token 配置与验收，不能并入上面的已部署清单。待办以 [`docs/backend-operations.md`](docs/backend-operations.md) 为准。
+仓库已加入由后端周期刷新、SQLite 保存 last-good snapshot 的 GitHub activity 路径：配置可选的 server-only token 时使用官方 GitHub GraphQL，未配置时组合 GitHub REST 公开仓库元数据与公开 rolling contributions HTML。该扩展及其新版首页尚待生产部署与验收，不能并入上面的已部署清单。待办以 [`docs/backend-operations.md`](docs/backend-operations.md) 为准。
 
 静态站不迁移，仍由 GitHub Pages 承载；Azure 只运行 `api.beforeugone.com` 的轻量 Go/SQLite 服务。后续 OpenClaw 私人消息中枢仍处于规划阶段。
 
 架构和后续阶段见 [`docs/handoff-personal-backend.md`](docs/handoff-personal-backend.md)，实际 API 与部署步骤分别见 [`docs/backend-api.md`](docs/backend-api.md) 和 [`docs/backend-operations.md`](docs/backend-operations.md)。
 
-本地验证后端：
+后端模块要求 Go 1.25.0 或更新版本；生产候选应使用仍受支持的最新补丁版工具链构建。本地验证后端：
 
 ```bash
 cd backend
