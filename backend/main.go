@@ -30,10 +30,21 @@ func main() {
 		os.Exit(1)
 	}
 	defer store.Close()
+	api := newAPI(cfg, store, logger)
+	workerCtx, stopWorkers := context.WithCancel(context.Background())
+	workerDone := make(chan struct{})
+	go func() {
+		defer close(workerDone)
+		api.github.Run(workerCtx)
+	}()
+	defer func() {
+		stopWorkers()
+		<-workerDone
+	}()
 
 	server := &http.Server{
 		Addr:              cfg.ListenAddr,
-		Handler:           newAPI(cfg, store, logger).Handler(),
+		Handler:           api.Handler(),
 		ReadHeaderTimeout: 5 * time.Second,
 		ReadTimeout:       10 * time.Second,
 		WriteTimeout:      15 * time.Second,
@@ -51,11 +62,13 @@ func main() {
 	defer stop()
 	select {
 	case err := <-serverErr:
+		stopWorkers()
 		if !errors.Is(err, http.ErrServerClosed) {
 			logger.Error("HTTP server stopped", "error", err)
 			os.Exit(1)
 		}
 	case <-signalCtx.Done():
+		stopWorkers()
 		shutdownCtx, cancel := context.WithTimeout(context.Background(), cfg.ShutdownTimeout)
 		defer cancel()
 		if err := server.Shutdown(shutdownCtx); err != nil {

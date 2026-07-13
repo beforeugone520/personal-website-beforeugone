@@ -5,6 +5,7 @@
 - This repository is the static source for `https://beforeugone.com/`.
 - Production remains on GitHub Pages with Cloudflare managing the custom domain/edge. Do not migrate the static site to the Azure VM unless the user explicitly changes this decision.
 - Phase 1 is deployed on Hermes/Azure: the Go/SQLite API serves `https://api.beforeugone.com` behind Cloudflare and Caddy, while `assets/site-dynamic.js` remains on GitHub Pages. Keep the remaining production checks in `docs/backend-operations.md` visible until they pass.
+- The backend-owned GitHub activity snapshot and redesigned activity section are a pending production rollout. Do not describe `/v1/public/github`, its cache migration, or its server-side refresh as deployed until the deploy/config/verification checklist in `docs/backend-operations.md` passes.
 - Hermes OpenClaw may act as a server operator under `docs/openclaw-backend-operations.md`; that does not mean the website is connected to OpenClaw. Preserve the runbook's confirmation boundaries and never reveal server secret values.
 - The custom OpenClaw messaging surface is still planned, not implemented. Read `docs/handoff-personal-backend.md` before starting Phase 2 or later work.
 
@@ -35,4 +36,4 @@
 - Public AI Q&A may use only explicitly indexed public site/repository content and must not have tools.
 - Prefer a lightweight Go service with SQLite for the Azure VM. Do not add a heavy database or local model to the 1 GB host.
 - New routes, tables, environment variables, and deployment steps must be reflected in project docs, not only in code.
-- `ADMIN_TOKEN`, `ANONYMIZATION_SECRET`, `TURNSTILE_SECRET`, and `GITHUB_WEBHOOK_SECRET` are server-only. Never commit them or place them in HTML/JavaScript.
+- `ADMIN_TOKEN`, `ANONYMIZATION_SECRET`, `TURNSTILE_SECRET`, `GITHUB_WEBHOOK_SECRET`, and `GITHUB_API_TOKEN` are server-only. Never commit them or place them in HTML/JavaScript.

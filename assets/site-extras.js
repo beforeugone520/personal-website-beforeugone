@@ -1,4 +1,4 @@
-/* BeforeUgone · terminal, Konami easter egg, GitHub activity and shared public API.
+/* BeforeUgone · terminal, Konami easter egg and shared public API.
    Vanilla, dependency-free and quiet on network failure. Shared by index/blog/posts. */
 (function () {
   'use strict';
@@ -14,10 +14,6 @@
   function textNode(tag, cls, value) { var e = document.createElement(tag); if (cls) e.className = cls; if (value != null) e.textContent = String(value); return e; }
   function esc(s) { return String(s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); }
   function siteURL(path) { return new URL(path, SITE_ROOT).href; }
-  function safeExternalURL(value) {
-    try { var url = new URL(String(value)); return url.protocol === 'https:' || url.protocol === 'http:' ? url.href : ''; }
-    catch (e) { return ''; }
-  }
   function metaContent(name) { var n = document.querySelector('meta[name="' + name + '"]'); return n ? n.getAttribute('content').trim() : ''; }
   function resolveApiBase() {
     var override = metaContent('beforeu-api-base');
@@ -79,6 +75,7 @@
     get base() { return resolveApiBase(); },
     getNow: function () { return apiRequest('/v1/public/now'); },
     getShip: function (limit, cursor) { return apiRequest('/v1/public/ship?limit=' + (limit || 5) + (cursor ? '&cursor=' + encodeURIComponent(cursor) : '')); },
+    getGitHubActivity: function () { return apiRequest('/v1/public/github'); },
     getGuestbook: function (limit, cursor) { return apiRequest('/v1/public/guestbook?limit=' + (limit || 10) + (cursor ? '&cursor=' + encodeURIComponent(cursor) : '')); },
     postGuestbook: function (body, key) { return apiWrite('/v1/public/guestbook', body, key); },
     getReactions: function (pageKey) { return apiRequest('/v1/public/reactions?page_key=' + encodeURIComponent(pageKey)); },
@@ -260,67 +257,12 @@
     else print('command not found: <span class="t-warn">' + esc(cmd) + '</span> — 试试 <span class="t-cmd">help</span>');
   }
 
-  /* ───────── GitHub activity ───────── */
-  var REPOS = null;
-  var LANGC = { JavaScript: '#f1e05a', TypeScript: '#3178c6', Python: '#3572A5', HTML: '#e34c26', CSS: '#563d7c', Vue: '#41b883', Shell: '#89e051', 'C++': '#f34b7d', C: '#555555', 'C#': '#178600', Java: '#b07219', Go: '#00ADD8', Rust: '#dea584', 'Jupyter Notebook': '#DA5B0B', Svelte: '#ff3e00', Kotlin: '#A97BFF', Swift: '#F05138', Dart: '#00B4AB', Ruby: '#701516', PHP: '#4F5D95', Astro: '#ff5a03' };
-  function rel(d) {
-    var s = (Date.now() - new Date(d).getTime()) / 1000;
-    if (s < 3600) return Math.max(1, Math.floor(s / 60)) + ' 分钟前';
-    if (s < 86400) return Math.floor(s / 3600) + ' 小时前';
-    var dd = Math.floor(s / 86400);
-    if (dd < 30) return dd + ' 天前'; if (dd < 365) return Math.floor(dd / 30) + ' 个月前'; return Math.floor(dd / 365) + ' 年前';
-  }
-  function initGitHub() {
-    var host = document.getElementById('ghLive'); if (!host) return;
-    fetch('https://api.github.com/users/' + GH_USER + '/repos?per_page=100&sort=pushed&type=owner')
-      .then(function (r) { if (!r.ok) throw new Error(); return r.json(); })
-      .then(function (list) {
-        REPOS = (list || []).filter(function (x) { return !x.fork; }).sort(function (a, b) { return new Date(b.pushed_at) - new Date(a.pushed_at); });
-        renderRepos(REPOS.slice(0, 6)); host.hidden = false; requestAnimationFrame(function () { host.classList.add('in'); });
-      })
-      .catch(function () { var g = document.getElementById('ghRepos'); if (g) g.style.display = 'none'; });
-    fetch('https://github-contributions-api.jogruber.de/v4/' + GH_USER + '?y=last')
-      .then(function (r) { if (!r.ok) throw new Error(); return r.json(); })
-      .then(function (d) { renderHeat(d); host.hidden = false; requestAnimationFrame(function () { host.classList.add('in'); }); })
-      .catch(function () { var hm = document.getElementById('ghHeat'); if (hm) hm.style.display = 'none'; });
-  }
-  function renderRepos(list) {
-    var grid = document.getElementById('ghRepos'); if (!grid) return; grid.textContent = '';
-    list.forEach(function (repo) {
-      var href = safeExternalURL(repo.html_url);
-      var card = textNode(href ? 'a' : 'div', 'gh-repo');
-      if (href) { card.href = href; card.target = '_blank'; card.rel = 'noopener'; }
-      var top = textNode('div', 'gh-r-top');
-      top.appendChild(textNode('span', 'gh-r-name', repo.name));
-      if (repo.stargazers_count) top.appendChild(textNode('span', 'gh-r-star', '★ ' + repo.stargazers_count));
-      card.appendChild(top);
-      card.appendChild(textNode('p', 'gh-r-desc', repo.description || '—'));
-      var meta = textNode('div', 'gh-r-meta');
-      if (repo.language) {
-        var language = textNode('span', 'gh-r-lang');
-        var dot = textNode('i'); dot.style.background = LANGC[repo.language] || '#8b8b8b';
-        language.appendChild(dot); language.appendChild(document.createTextNode(repo.language)); meta.appendChild(language);
-      }
-      meta.appendChild(textNode('span', 'gh-r-upd', '更新于 ' + rel(repo.pushed_at)));
-      card.appendChild(meta); grid.appendChild(card);
-    });
-  }
-  function renderHeat(data) {
-    var host = document.getElementById('ghHeat'); if (!host || !data || !data.contributions || !data.contributions.length) return;
-    var days = data.contributions;
-    var total = data.total && (data.total.lastYear != null ? data.total.lastYear : (typeof data.total === 'number' ? data.total : null));
-    if (total == null) total = days.reduce(function (sum, item) { return sum + (item.count || 0); }, 0);
-    var totalNode = document.getElementById('ghTotal'); if (totalNode) totalNode.textContent = '过去一年 ' + total + ' 次贡献';
-    var grid = textNode('div', 'heat-grid');
-    var pad = new Date(days[0].date + 'T00:00:00').getDay();
-    for (var i = 0; i < pad; i++) grid.appendChild(textNode('span', 'heat-cell pad'));
-    days.forEach(function (item) { var cell = textNode('span', 'heat-cell lv' + (item.level || 0)); cell.title = item.date + ' · ' + (item.count || 0) + ' 次'; grid.appendChild(cell); });
-    host.textContent = ''; var scroll = textNode('div', 'heat-scroll'); scroll.appendChild(grid); host.appendChild(scroll);
-  }
+  /* ───────── GitHub repositories supplied by the public backend ───────── */
   function listReposInTerm() {
-    if (!REPOS) { print('正在抓取 GitHub… 稍后再试 <span class="t-cmd">repos</span>', 't-dim'); return; }
-    if (!REPOS.length) { printText('没抓到公开仓库。', 't-dim'); return; }
-    REPOS.slice(0, 8).forEach(function (repo) { printText(repo.name + '  ' + String(repo.description || '').slice(0, 44)); });
+    var repos = window.BeforeUGitHubRepositories;
+    if (!Array.isArray(repos)) { print('后端还在同步 GitHub… 稍后再试 <span class="t-cmd">repos</span>', 't-dim'); return; }
+    if (!repos.length) { printText('还没有同步到公开仓库。', 't-dim'); return; }
+    repos.slice(0, 8).forEach(function (repo) { printText(repo.name + '  ' + String(repo.description || '').slice(0, 44)); });
   }
 
   /* ───────── Konami easter egg ───────── */
@@ -358,7 +300,6 @@
   function init() {
     try { launcher(); } catch (e) {}
     try { globalKeys(); } catch (e) {}
-    try { initGitHub(); } catch (e) {}
   }
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init); else init();
 })();

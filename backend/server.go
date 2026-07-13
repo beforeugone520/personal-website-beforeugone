@@ -35,6 +35,7 @@ type API struct {
 	store       *Store
 	logger      *slog.Logger
 	turnstile   *TurnstileVerifier
+	github      *githubActivityRefresher
 	rateLimiter *writeRateLimiter
 	cors        map[string]struct{}
 	static      http.Handler
@@ -61,6 +62,7 @@ func newAPI(cfg Config, store *Store, logger *slog.Logger) *API {
 		store:       store,
 		logger:      logger,
 		turnstile:   NewTurnstileVerifier(cfg.TurnstileSecret, cfg.TurnstileVerifyURL, cfg.TurnstileHostnames, nil),
+		github:      newGitHubActivityRefresher(cfg, store, logger),
 		rateLimiter: newWriteRateLimiter(cfg.PublicWriteLimit, cfg.PublicWriteWindow),
 		cors:        stringSet(cfg.CORSAllowedOrigins),
 		keyLocks:    make(map[string]*idempotencyLock),
@@ -104,6 +106,9 @@ func (a *API) route(w http.ResponseWriter, r *http.Request) {
 		return
 	case "/v1/public/ship":
 		a.handlePublicShip(w, r)
+		return
+	case "/v1/public/github":
+		a.handlePublicGitHub(w, r)
 		return
 	case "/v1/public/guestbook":
 		if r.Method == http.MethodGet {
@@ -168,6 +173,24 @@ func (a *API) route(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	a.writeError(w, r, http.StatusNotFound, "not_found", "route not found")
+}
+
+func (a *API) handlePublicGitHub(w http.ResponseWriter, r *http.Request) {
+	if !methodIs(w, r, http.MethodGet) {
+		return
+	}
+	snapshot, err := a.store.GitHubActivity(r.Context())
+	if err != nil {
+		a.internalError(w, r, err)
+		return
+	}
+	if snapshot == nil || !strings.EqualFold(snapshot.Username, a.cfg.GitHubUsername) {
+		w.Header().Set("Cache-Control", "no-store")
+		a.writeError(w, r, http.StatusServiceUnavailable, "github_unavailable", "GitHub activity is not available yet")
+		return
+	}
+	w.Header().Set("Cache-Control", "public, max-age=300, stale-while-revalidate=3600")
+	writeJSON(w, http.StatusOK, map[string]any{"data": snapshot})
 }
 
 func (a *API) handlePublicNow(w http.ResponseWriter, r *http.Request) {

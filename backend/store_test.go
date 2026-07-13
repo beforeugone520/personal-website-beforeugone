@@ -48,8 +48,46 @@ func TestOpenStoreAppliesMigrationsAndPragmas(t *testing.T) {
 	if err := store.db.QueryRowContext(ctx, "SELECT COUNT(*) FROM schema_migrations").Scan(&migrations); err != nil {
 		t.Fatal(err)
 	}
-	if migrations != 1 {
-		t.Fatalf("migration count = %d, want 1", migrations)
+	if migrations != 2 {
+		t.Fatalf("migration count = %d, want 2", migrations)
+	}
+}
+
+func TestStoreGitHubActivitySnapshotUpsert(t *testing.T) {
+	store := testStore(t)
+	ctx := context.Background()
+
+	empty, err := store.GitHubActivity(ctx)
+	if err != nil || empty != nil {
+		t.Fatalf("empty GitHub activity = %#v, %v", empty, err)
+	}
+	first := GitHubActivitySnapshot{
+		Username: "beforeugone520", ProfileURL: "https://github.com/beforeugone520",
+		TotalContributions: 12, RefreshedAt: "2026-07-13T10:00:00Z",
+		Contributions: []GitHubContribution{{Date: "2026-07-13", Count: 2, Level: 1}},
+		Repositories:  []GitHubRepository{{Name: "site", FullName: "beforeugone520/site", URL: "https://github.com/beforeugone520/site", Stars: 3}},
+	}
+	if err := store.PutGitHubActivity(ctx, first); err != nil {
+		t.Fatal(err)
+	}
+	got, err := store.GitHubActivity(ctx)
+	if err != nil || got == nil || got.Username != first.Username || got.RefreshedAt != first.RefreshedAt || len(got.Contributions) != 1 || len(got.Repositories) != 1 {
+		t.Fatalf("stored GitHub activity = %#v, %v", got, err)
+	}
+
+	second := first
+	second.TotalContributions = 20
+	second.RefreshedAt = "2026-07-13T11:00:00Z"
+	if err := store.PutGitHubActivity(ctx, second); err != nil {
+		t.Fatal(err)
+	}
+	got, err = store.GitHubActivity(ctx)
+	if err != nil || got == nil || got.TotalContributions != 20 || got.RefreshedAt != second.RefreshedAt {
+		t.Fatalf("updated GitHub activity = %#v, %v", got, err)
+	}
+	var rows int
+	if err := store.db.QueryRowContext(ctx, "SELECT COUNT(*) FROM github_activity_cache").Scan(&rows); err != nil || rows != 1 {
+		t.Fatalf("GitHub cache rows = %d, %v", rows, err)
 	}
 }
 

@@ -1,15 +1,15 @@
 # Phase 1 API Contract
 
-> Contract for the production implementation under [`backend/`](../backend). Production base URL is `https://api.beforeugone.com`.
+> Contract for the implementation under [`backend/`](../backend). Production base URL is `https://api.beforeugone.com`. The GitHub activity route/cache described below is present in the repository but remains a pending production rollout; see [`backend-operations.md`](backend-operations.md).
 
 ## Conventions
 
-- JSON request bodies require `Content-Type: application/json`. Unknown fields, multiple JSON values, and bodies larger than 16 KiB are rejected. The GitHub webhook has a separate 1 MiB limit.
+- JSON request bodies require `Content-Type: application/json`. Unknown fields, multiple JSON values, and bodies larger than 16 KiB are rejected. The signed GitHub webhook is the exception: it verifies and decodes the raw event body with a separate 1 MiB limit so the HMAC covers the exact bytes GitHub sent.
 - Times are UTC RFC 3339 strings. Clients must treat cursors as opaque.
 - List endpoints accept `limit=1..50` and an optional `cursor`. They return `{"items":[],"next_cursor":null}` when empty or complete.
 - Responses carry `X-Request-ID`. A valid incoming `X-Request-ID` may be reused; otherwise the server creates one.
 - Allowed browser origins come from `CORS_ALLOWED_ORIGINS`. CORS is not an authentication mechanism.
-- Public read responses may be cached for 15 to 60 seconds. Do not assume a write is visible through an edge cache immediately.
+- Public read responses may be cached for 15 to 60 seconds unless a route below defines a longer policy. Do not assume a write is visible through an edge cache immediately.
 
 Most errors use this shape:
 
@@ -33,6 +33,7 @@ Log `request_id` when reporting an API failure. Expected status classes include 
 | `GET` | `/readyz` | none | SQLite readiness |
 | `GET` | `/v1/public/now` | none | Visible current status |
 | `GET` | `/v1/public/ship` | none | Visible Ship Log |
+| `GET` | `/v1/public/github` | none | Last-good GitHub activity snapshot |
 | `GET` | `/v1/public/guestbook` | none | Approved messages |
 | `POST` | `/v1/public/guestbook` | Turnstile + idempotency | Submit to moderation |
 | `GET` | `/v1/public/reactions` | none | Reaction counts |
@@ -128,6 +129,47 @@ Webhook entries use `source` values `github_push` or `github_release` and also i
 ```
 
 `title` is 1 to 120 characters; `summary` is at most 500; `url` is empty or absolute HTTP(S). `occurred_at` defaults to now and `visible` defaults to `true` when omitted. Create returns `201`; replace returns `200`; both wrap the entry in `{"data":...}`. `POST /v1/admin/ship/{id}/hide` returns `204` and preserves the row for audit/history.
+
+## GitHub Activity
+
+`GET /v1/public/github` returns the latest complete snapshot stored by the backend:
+
+```json
+{
+  "data": {
+    "username": "beforeugone520",
+    "profile_url": "https://github.com/beforeugone520",
+    "total_contributions": 232,
+    "contributions": [
+      {
+        "date": "2026-07-13",
+        "count": 3,
+        "level": 2
+      }
+    ],
+    "repositories": [
+      {
+        "name": "personal-website-beforeugone",
+        "full_name": "beforeugone520/personal-website-beforeugone",
+        "description": "Personal website source",
+        "url": "https://github.com/beforeugone520/personal-website-beforeugone",
+        "language": "HTML",
+        "language_color": "#e34c26",
+        "stars": 3,
+        "pushed_at": "2026-07-13T08:00:00Z",
+        "archived": false
+      }
+    ],
+    "refreshed_at": "2026-07-13T08:05:00Z"
+  }
+}
+```
+
+Contribution `date` uses `YYYY-MM-DD`; `level` is GitHub's normalized contribution intensity mapped to `0` through `4`. `repositories` contains at most six public, owner-affiliated, non-fork, non-archived repositories ordered by most recent push; `archived` is retained in the stable response shape and is `false` for these active rows. Description/language fields can be empty. Repository strings originate from public GitHub data and must still be rendered with DOM text APIs. Consumers should use `refreshed_at` as the freshness signal and tolerate an older snapshot.
+
+When `GITHUB_API_TOKEN` is configured, the process fetches this data from the official GitHub GraphQL API at startup and every `GITHUB_REFRESH_INTERVAL`, bounded by `GITHUB_REQUEST_TIMEOUT`. The token must be public-read-only: classic `read:user`, `user`, and `repo` scopes, private-repository access, and fine-grained account permissions that expose non-public contributions are forbidden. The client rejects classic tokens whose response advertises one of those broad scopes. A successful, structurally complete refresh atomically replaces the singleton `github_activity_cache` snapshot. A failed or incomplete upstream request never deletes or partially overwrites the last-good snapshot. The public request reads SQLite only; it does not synchronously proxy GitHub.
+
+The route sends `Cache-Control: public, max-age=300, stale-while-revalidate=3600`. It continues to return `200` while a last-good snapshot for the configured `GITHUB_USERNAME` exists, even when a later refresh failed. It returns `503 github_unavailable` with `Cache-Control: no-store` when the cache is empty or still belongs to a previously configured username. `GITHUB_API_TOKEN` is server-only and is never included in the response. An accepted GitHub webhook may wake the background refresher, but webhook acceptance does not wait for or guarantee a refresh.
 
 ## Guestbook
 
@@ -245,8 +287,8 @@ If `ADMIN_TOKEN` is empty, admin routes return `503 admin_disabled`; an invalid 
 `POST /v1/webhooks/github` requires:
 
 - `X-Hub-Signature-256: sha256=<HMAC>` using `GITHUB_WEBHOOK_SECRET`.
-- A unique `X-GitHub-Delivery` of 8 to 128 characters.
+- An `X-GitHub-Delivery` of 8 to 128 characters; push/release delivery IDs must be unique.
 - `X-GitHub-Event` equal to `ping`, `push`, or `release`.
-- A payload repository `full_name` present in `GITHUB_ALLOWED_REPOSITORIES`.
+- For push/release, a payload repository `full_name` present in `GITHUB_ALLOWED_REPOSITORIES`.
 
-`ping` returns `200 {"pong":true}`. Pushes with commits and releases whose action is `published` create one visible Ship item. Other supported-event payloads can return `202 {"accepted":false}` without creating an item. Replayed deliveries also return `202`, add `Idempotency-Replayed: true`, and do not duplicate data. Unsupported events return `400`; invalid signatures return `401`; non-allowlisted repositories return `403`.
+Signed `ping` is a stateless liveness handshake: it validates the signature and delivery header, then returns `200 {"pong":true}` without parsing the repository, persisting the delivery, or signaling an activity refresh. Pushes with commits and releases whose action is `published` create one visible Ship item. Other supported-event payloads can return `202 {"accepted":false}` without creating an item. Replayed push/release deliveries also return `202`, add `Idempotency-Replayed: true`, and do not duplicate data. Unsupported events return `400`; invalid signatures return `401`; non-allowlisted push/release repositories return `403`.

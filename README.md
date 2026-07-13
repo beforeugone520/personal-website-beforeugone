@@ -10,7 +10,7 @@
 - `blog.html` —— 写作目录
 - `posts/` —— 文章页（每篇一个 HTML 文件）
 - `css/site.css` —— 共享设计系统（改主题只改这里）
-- `assets/site-dynamic.js` —— Now / Ship Log / 留言 / 文章回应的静态端接入与失败降级
+- `assets/site-dynamic.js` —— Now / Ship Log / GitHub activity / 留言 / 文章回应的静态端接入与失败降级
 - `backend/` —— Phase 1 Go API、SQLite migration 与测试
 - `deploy/` —— systemd、备份 timer 和 Caddy 的无密钥部署样例
 - `docs/backend-api.md` —— 已实现的 Phase 1 HTTP 契约
@@ -26,6 +26,8 @@
 ## 动态后端
 
 Phase 1 已部署到 Hermes/Azure，并通过 Cloudflare/Caddy 由 `https://api.beforeugone.com` 提供 Now、Ship Log、留言审核、文章轻回应、GitHub webhook、健康检查、限流和基础审计。
+
+仓库已加入由后端官方 GitHub GraphQL 周期刷新、SQLite 保存 last-good snapshot 的 GitHub activity 路径；该扩展及其新版首页尚待生产部署、server-only token 配置与验收，不能并入上面的已部署清单。待办以 [`docs/backend-operations.md`](docs/backend-operations.md) 为准。
 
 静态站不迁移，仍由 GitHub Pages 承载；Azure 只运行 `api.beforeugone.com` 的轻量 Go/SQLite 服务。后续 OpenClaw 私人消息中枢仍处于规划阶段。
 

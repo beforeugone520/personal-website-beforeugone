@@ -1,6 +1,6 @@
 # BeforeUgone 个人站动态后端与 Agent 中枢 Handoff
 
-> 状态：Phase 1 已部署到 Hermes/Azure，核心生产路径已验收；真实浏览器 Turnstile 写入和代码回滚演练仍待完成；Phase 2 至 Phase 4 仍为方案
+> 状态：Phase 1 已部署到 Hermes/Azure，核心生产路径已验收；真实浏览器 Turnstile 写入和代码回滚演练仍待完成；后端 GitHub activity snapshot 为仓库内待发布扩展，尚未完成生产配置或验收；Phase 2 至 Phase 4 仍为方案
 > 更新日期：2026-07-13
 
 ## 1. 目标
@@ -21,7 +21,7 @@
 - 托管：GitHub Pages；域名和边缘能力由 Cloudflare 管理。
 - 仓库：`beforeugone520/personal-website-beforeugone`。
 - 前端：主体为静态 HTML/CSS/JavaScript；主题滑块是独立 Vue/Vite 子工程。
-- 已有动态感：GitHub 仓库动态、贡献热力图、终端模式、Konami 彩蛋。
+- 已有动态感：GitHub 仓库动态、贡献热力图、终端模式、Konami 彩蛋。当前生产 GitHub activity 仍由浏览器访问外部源；改为后端 last-good snapshot 的版本尚待发布。
 - Phase 1 Go/SQLite API 已在 Hermes 通过 systemd 运行，生产域名为 `https://api.beforeugone.com`。
 - Caddy、真实 secret、Cloudflare DNS/Full (strict)、Turnstile 和 GitHub webhook 已应用；备份校验、临时恢复和重启持久化检查已通过。
 - Hermes OpenClaw 已获得独立的后端代管手册，只作为受约束的服务器运维者；详细权限边界见 [`openclaw-backend-operations.md`](openclaw-backend-operations.md)。
@@ -32,16 +32,17 @@
 
 ### 3.1 个人站动态层
 
-动态层候选能力如下；Phase 1 已上线第 1 至 4 项，第 5 至 8 项尚未实现：
+动态层候选能力如下；Phase 1 已上线第 1 至 4 项，第 5 项是本次尚待生产发布的扩展，第 6 至 9 项尚未实现：
 
 1. `Now`：首页显示站主当前状态和更新时间；由本机管理 API 更新。OpenClaw 只能在用户确认后以运维者身份调用，并无应用内集成。
 2. `Ship Log`：聚合 GitHub Push/Release 与手动记录，形成简洁的完成事项时间流。
 3. 留一句话：匿名或昵称留言，先审后发，可显示站主回复。
 4. 文章轻回应：有共鸣、学到了、想看后续、没看懂；无需账号，每设备每篇每类一次。
-5. 项目催更：按项目计数，按周汇总，不逐次打扰。
-6. 隐私友好统计：只保留按日聚合的页面、来源和大区数据，不保存完整 IP，不做浏览器指纹。
-7. 时间胶囊：内容在指定日期自动公开。
-8. Idea Incubator：公开想法、状态和轻量“我也想要”计数。
+5. GitHub activity snapshot：后端使用官方 GraphQL 周期读取公开贡献与仓库元数据，SQLite 只保留完整 last-good snapshot，静态前端只调用 `GET /v1/public/github`。
+6. 项目催更：按项目计数，按周汇总，不逐次打扰。
+7. 隐私友好统计：只保留按日聚合的页面、来源和大区数据，不保存完整 IP，不做浏览器指纹。
+8. 时间胶囊：内容在指定日期自动公开。
+9. Idea Incubator：公开想法、状态和轻量“我也想要”计数。
 
 现有终端已增加这些动态命令：
 
@@ -88,6 +89,8 @@ Caddy -> beforeu-api -> SQLite
 OpenClaw Gateway 127.0.0.1:18789（独立运行，仅由 OpenClaw 作为运维者使用）
 ```
 
+本次 GitHub activity 扩展发布后，浏览器只从 `beforeu-api` 读取公开快照；后台使用服务端 token 调用官方 GitHub GraphQL，并把完整 last-good snapshot 存入同一 SQLite。外部刷新失败不会把 GitHub 请求转嫁给访客，也不会清空已有快照。该路径在完成 [`backend-operations.md`](backend-operations.md) 的待发布清单前不属于当前生产架构。
+
 后续 Phase 2 至 Phase 4 才会引入 Relay：
 
 ```text
@@ -132,7 +135,7 @@ Harmony-Claw (later) ---------- HTTPS/WebSocket ----^
 
 ## 6. 数据模型
 
-Phase 1 已实现：
+Phase 1 已在生产实现：
 
 | 表 | 用途 |
 | --- | --- |
@@ -143,6 +146,12 @@ Phase 1 已实现：
 | `idempotency_requests` | 公共写请求的幂等结果 |
 | `github_deliveries` | GitHub delivery 去重 |
 | `audit_log` | 管理操作和 webhook 写入审计 |
+
+仓库内待发布的 Phase 1 扩展：
+
+| 表 | 用途 |
+| --- | --- |
+| `github_activity_cache` | 官方 GitHub GraphQL 公开 activity 的 singleton last-good JSON snapshot 与抓取时间 |
 
 后续阶段草案：
 
@@ -163,7 +172,7 @@ Phase 1 已实现：
 
 ## 7. API
 
-Phase 1 已实现的详细 JSON、校验、幂等和错误契约见 [`backend-api.md`](backend-api.md)。路由如下：
+Phase 1 生产接口的详细 JSON、校验、幂等和错误契约见 [`backend-api.md`](backend-api.md)。路由如下：
 
 公开读取：
 
@@ -177,6 +186,14 @@ GET  /v1/public/reactions?page_key=...
 POST /v1/public/guestbook
 POST /v1/public/reactions
 ```
+
+仓库内待发布的公开读取扩展：
+
+```text
+GET  /v1/public/github
+```
+
+该路由只读 SQLite last-good cache；它不在访客请求中同步代理 GitHub。与当前 `GITHUB_USERNAME` 匹配的旧快照即使最新后台刷新失败也继续返回 `200`；缓存为空或仍属于先前配置的用户名时返回 `503`。
 
 Phase 1 管理与 webhook：
 
@@ -216,6 +233,7 @@ GET  /v1/events/ws
 - 初始设备通过 Tailscale 或服务器 CLI 产生的一次性短码配对。
 - 每台设备使用独立、可撤销的凭据，不共享管理员密码。
 - 公共写接口使用 Cloudflare Turnstile、可信客户端 IP 限流、正文长度限制和审核队列；Turnstile secret 缺失时必须关闭写入而不是绕过验证。
+- `GITHUB_API_TOKEN` 只用于后端官方 GraphQL 刷新，必须使用公开读取所需的最低权限，禁止 classic `read:user`/`user`/`repo`、私有仓库访问和可读取非公开贡献的 fine-grained account permission；不得进入 Git、浏览器、静态资源、日志、OpenClaw memory 或 webhook payload。
 - 推送通知默认不携带敏感正文，只提示“有新消息”，打开客户端后再拉取。
 - Phase 1 公共匿名写接口使用幂等键，GitHub webhook 使用 delivery ID 去重；后续消息、任务和审批写接口也必须在实现时设计幂等语义。
 - 审批操作写入审计日志；危险动作默认不得自动批准。
@@ -232,9 +250,10 @@ GET  /v1/events/ws
 - [x] 增加一致性备份脚本、健康检查、应用层限流、幂等和基础审计。
 - [x] 在 Hermes/Azure 安装服务并配置真实 secret。
 - [x] 配置 Cloudflare DNS、Full (strict)、Turnstile、边缘限流和 GitHub webhook。
+- [ ] 部署 GitHub activity cache migration、后台初次/周期刷新和 `GET /v1/public/github`；配置最小权限 token，发布前端并完成缓存、失败保留、Webhook 唤醒和响应式验收。
 - [ ] 完成真实浏览器留言审核闭环、Azure NSG 复核和代码回滚演练；重启持久化、API 故障降级和临时备份恢复已通过。
 
-验收：主站动态功能可用，服务器重启后数据不丢，API 故障不拖垮首页。核心生产路径已于 2026-07-13 通过；剩余项见上方清单和 [`backend-operations.md`](backend-operations.md) 的生产验收记录。
+验收：主站动态功能可用，服务器重启后数据不丢，API 故障不拖垮首页。原 Phase 1 核心生产路径已于 2026-07-13 通过；GitHub activity 扩展和其他剩余项见上方清单及 [`backend-operations.md`](backend-operations.md) 的生产验收/待发布记录。
 
 ### Phase 2：Relay PWA
 

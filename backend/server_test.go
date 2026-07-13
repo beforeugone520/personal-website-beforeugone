@@ -2,6 +2,7 @@ package main
 
 import (
 	"bytes"
+	"context"
 	"crypto/hmac"
 	"crypto/sha256"
 	"encoding/hex"
@@ -23,18 +24,21 @@ import (
 
 func testConfig() Config {
 	return Config{
-		ListenAddr:          "127.0.0.1:0",
-		AdminToken:          "admin-secret-token",
-		AnonymizationSecret: "visitor-hmac-secret",
-		CORSAllowedOrigins:  []string{"https://beforeugone.com"},
-		TurnstileHostnames:  map[string]struct{}{"beforeugone.com": {}},
-		AllowInsecureWrites: true,
-		GitHubWebhookSecret: "github-secret",
-		GitHubAllowedRepos:  map[string]struct{}{"beforeugone/site": {}},
-		ReactionPageKeys:    map[string]struct{}{"/posts/hello-world.html": {}, "/posts/hello.html": {}},
-		PublicWriteLimit:    100,
-		PublicWriteWindow:   time.Minute,
-		MaxRequestBodyBytes: 16 << 10,
+		ListenAddr:            "127.0.0.1:0",
+		AdminToken:            "admin-secret-token",
+		AnonymizationSecret:   "visitor-hmac-secret",
+		CORSAllowedOrigins:    []string{"https://beforeugone.com"},
+		TurnstileHostnames:    map[string]struct{}{"beforeugone.com": {}},
+		AllowInsecureWrites:   true,
+		GitHubWebhookSecret:   "github-secret",
+		GitHubAllowedRepos:    map[string]struct{}{"beforeugone/site": {}},
+		GitHubUsername:        "beforeugone520",
+		GitHubRefreshInterval: 15 * time.Minute,
+		GitHubRequestTimeout:  10 * time.Second,
+		ReactionPageKeys:      map[string]struct{}{"/posts/hello-world.html": {}, "/posts/hello.html": {}},
+		PublicWriteLimit:      100,
+		PublicWriteWindow:     time.Minute,
+		MaxRequestBodyBytes:   16 << 10,
 	}
 }
 
@@ -118,6 +122,45 @@ func TestAPIHealthCORSAndAdminNow(t *testing.T) {
 	decodeResponse(t, public, &nowEnvelope)
 	if public.Code != http.StatusOK || nowEnvelope.Data == nil || nowEnvelope.Data.Summary != "Building P1" {
 		t.Fatalf("public now = %d %#v", public.Code, nowEnvelope)
+	}
+}
+
+func TestAPIPublicGitHubSnapshot(t *testing.T) {
+	api, store := testAPI(t, nil)
+	handler := api.Handler()
+
+	empty := requestJSON(t, handler, http.MethodGet, "/v1/public/github", nil, nil)
+	if empty.Code != http.StatusServiceUnavailable || empty.Header().Get("Cache-Control") != "no-store" || !strings.Contains(empty.Body.String(), "github_unavailable") {
+		t.Fatalf("empty GitHub response = %d headers=%v body=%s", empty.Code, empty.Header(), empty.Body.String())
+	}
+	snapshot := GitHubActivitySnapshot{
+		Username: "beforeugone520", ProfileURL: "https://github.com/beforeugone520",
+		TotalContributions: 232, RefreshedAt: "2026-07-13T12:00:00Z",
+		Contributions: []GitHubContribution{{Date: "2026-07-13", Count: 4, Level: 3}},
+		Repositories:  []GitHubRepository{{Name: "site", FullName: "beforeugone520/site", URL: "https://github.com/beforeugone520/site"}},
+	}
+	if err := store.PutGitHubActivity(context.Background(), snapshot); err != nil {
+		t.Fatal(err)
+	}
+	response := requestJSON(t, handler, http.MethodGet, "/v1/public/github", nil, map[string]string{"Origin": "https://beforeugone.com"})
+	if response.Code != http.StatusOK || response.Header().Get("Cache-Control") != "public, max-age=300, stale-while-revalidate=3600" || response.Header().Get("Access-Control-Allow-Origin") != "https://beforeugone.com" {
+		t.Fatalf("GitHub response = %d headers=%v body=%s", response.Code, response.Header(), response.Body.String())
+	}
+	var envelope struct {
+		Data GitHubActivitySnapshot `json:"data"`
+	}
+	decodeResponse(t, response, &envelope)
+	if envelope.Data.Username != snapshot.Username || envelope.Data.TotalContributions != 232 || len(envelope.Data.Contributions) != 1 || len(envelope.Data.Repositories) != 1 {
+		t.Fatalf("GitHub payload = %#v", envelope.Data)
+	}
+	api.cfg.GitHubUsername = "different-user"
+	mismatch := requestJSON(t, handler, http.MethodGet, "/v1/public/github", nil, nil)
+	if mismatch.Code != http.StatusServiceUnavailable || mismatch.Header().Get("Cache-Control") != "no-store" {
+		t.Fatalf("mismatched GitHub cache = %d headers=%v body=%s", mismatch.Code, mismatch.Header(), mismatch.Body.String())
+	}
+	method := requestJSON(t, handler, http.MethodPost, "/v1/public/github", nil, nil)
+	if method.Code != http.StatusMethodNotAllowed {
+		t.Fatalf("GitHub POST = %d %s", method.Code, method.Body.String())
 	}
 }
 
@@ -378,6 +421,7 @@ func TestAPIConcurrentIdempotentRetriesVerifyTurnstileOnce(t *testing.T) {
 
 func TestAPIGitHubWebhookSignatureAllowlistAndDedupe(t *testing.T) {
 	api, _ := testAPI(t, nil)
+	api.github.token = "test-token"
 	handler := api.Handler()
 	payload := []byte(`{"ref":"refs/heads/main","compare":"https://github.com/beforeugone/site/compare/a...b","repository":{"full_name":"beforeugone/site"},"commits":[{"message":"First"},{"message":"Ship it"}],"head_commit":{"message":"Ship it","url":"https://github.com/beforeugone/site/commit/b","timestamp":"2026-07-12T10:00:00Z"}}`)
 	signature := githubSignature(payload, "github-secret")
@@ -398,9 +442,19 @@ func TestAPIGitHubWebhookSignatureAllowlistAndDedupe(t *testing.T) {
 	if accepted.Code != http.StatusAccepted || !strings.Contains(accepted.Body.String(), `"accepted":true`) {
 		t.Fatalf("accepted = %d %s", accepted.Code, accepted.Body.String())
 	}
+	select {
+	case <-api.github.trigger:
+	default:
+		t.Fatal("accepted webhook did not signal GitHub activity refresh")
+	}
 	replay := send("delivery-0001", signature, payload)
 	if replay.Code != http.StatusAccepted || replay.Header().Get("Idempotency-Replayed") != "true" || !strings.Contains(replay.Body.String(), `"accepted":false`) {
 		t.Fatalf("replay = %d headers=%v body=%s", replay.Code, replay.Header(), replay.Body.String())
+	}
+	select {
+	case <-api.github.trigger:
+		t.Fatal("replayed webhook signaled GitHub activity refresh")
+	default:
 	}
 	ships := requestJSON(t, handler, http.MethodGet, "/v1/public/ship", nil, nil)
 	if ships.Code != http.StatusOK || strings.Count(ships.Body.String(), `"source":"github_push"`) != 1 || !strings.Contains(ships.Body.String(), "Pushed 2 commits") {

@@ -11,6 +11,7 @@ func TestLoadConfigDefaultsAndOverrides(t *testing.T) {
 		"TURNSTILE_VERIFY_URL", "GITHUB_WEBHOOK_SECRET", "GITHUB_ALLOWED_REPOSITORIES", "STATIC_DIR",
 		"PUBLIC_WRITE_RATE_LIMIT", "PUBLIC_WRITE_RATE_WINDOW", "TRUST_PROXY_HEADERS", "SHUTDOWN_TIMEOUT",
 		"REACTION_PAGE_KEYS", "TURNSTILE_ALLOWED_HOSTNAMES", "ALLOW_INSECURE_PUBLIC_WRITES",
+		"GITHUB_USERNAME", "GITHUB_API_TOKEN", "GITHUB_REFRESH_INTERVAL", "GITHUB_REQUEST_TIMEOUT",
 	} {
 		t.Setenv(name, "")
 	}
@@ -25,6 +26,9 @@ func TestLoadConfigDefaultsAndOverrides(t *testing.T) {
 	if cfg.PublicWriteLimit != 10 || cfg.PublicWriteWindow != time.Minute || cfg.ShutdownTimeout != 10*time.Second {
 		t.Fatalf("default timing = limit %d, window %s, shutdown %s", cfg.PublicWriteLimit, cfg.PublicWriteWindow, cfg.ShutdownTimeout)
 	}
+	if cfg.GitHubUsername != "beforeugone520" || cfg.GitHubRefreshInterval != 15*time.Minute || cfg.GitHubRequestTimeout != 10*time.Second {
+		t.Fatalf("default GitHub config = username %q, refresh %s, timeout %s", cfg.GitHubUsername, cfg.GitHubRefreshInterval, cfg.GitHubRequestTimeout)
+	}
 	if _, ok := cfg.ReactionPageKeys["/posts/hello-world.html"]; !ok {
 		t.Fatalf("default reaction pages = %#v", cfg.ReactionPageKeys)
 	}
@@ -37,6 +41,10 @@ func TestLoadConfigDefaultsAndOverrides(t *testing.T) {
 	t.Setenv("PUBLIC_WRITE_RATE_WINDOW", "2m")
 	t.Setenv("TRUST_PROXY_HEADERS", "true")
 	t.Setenv("REACTION_PAGE_KEYS", "/posts/one.html,/posts/two.html")
+	t.Setenv("GITHUB_USERNAME", "beforeu-test")
+	t.Setenv("GITHUB_API_TOKEN", "test-token")
+	t.Setenv("GITHUB_REFRESH_INTERVAL", "30m")
+	t.Setenv("GITHUB_REQUEST_TIMEOUT", "5s")
 	cfg, err = loadConfig()
 	if err != nil {
 		t.Fatal(err)
@@ -46,6 +54,29 @@ func TestLoadConfigDefaultsAndOverrides(t *testing.T) {
 	}
 	if len(cfg.ReactionPageKeys) != 2 {
 		t.Fatalf("reaction pages = %#v", cfg.ReactionPageKeys)
+	}
+	if cfg.GitHubUsername != "beforeu-test" || cfg.GitHubAPIToken != "test-token" || cfg.GitHubRefreshInterval != 30*time.Minute || cfg.GitHubRequestTimeout != 5*time.Second {
+		t.Fatalf("GitHub overrides = %#v", cfg)
+	}
+}
+
+func TestLoadConfigRejectsInvalidGitHubRefreshSettings(t *testing.T) {
+	t.Setenv("ANONYMIZATION_SECRET", "test-anonymization-secret-32-bytes")
+	t.Setenv("GITHUB_USERNAME", "-invalid")
+	if _, err := loadConfig(); err == nil {
+		t.Fatal("expected invalid GITHUB_USERNAME error")
+	}
+
+	t.Setenv("GITHUB_USERNAME", "beforeugone520")
+	t.Setenv("GITHUB_REFRESH_INTERVAL", "never")
+	if _, err := loadConfig(); err == nil {
+		t.Fatal("expected invalid GITHUB_REFRESH_INTERVAL error")
+	}
+
+	t.Setenv("GITHUB_REFRESH_INTERVAL", "15m")
+	t.Setenv("GITHUB_REQUEST_TIMEOUT", "0s")
+	if _, err := loadConfig(); err == nil {
+		t.Fatal("expected invalid GITHUB_REQUEST_TIMEOUT error")
 	}
 }
 

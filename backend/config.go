@@ -10,44 +10,52 @@ import (
 )
 
 type Config struct {
-	ListenAddr          string
-	DatabasePath        string
-	AdminToken          string
-	AnonymizationSecret string
-	CORSAllowedOrigins  []string
-	TurnstileSecret     string
-	TurnstileVerifyURL  string
-	TurnstileHostnames  map[string]struct{}
-	AllowInsecureWrites bool
-	GitHubWebhookSecret string
-	GitHubAllowedRepos  map[string]struct{}
-	ReactionPageKeys    map[string]struct{}
-	StaticDir           string
-	PublicWriteLimit    int
-	PublicWriteWindow   time.Duration
-	TrustedProxyHeader  bool
-	ShutdownTimeout     time.Duration
-	MaxRequestBodyBytes int64
+	ListenAddr            string
+	DatabasePath          string
+	AdminToken            string
+	AnonymizationSecret   string
+	CORSAllowedOrigins    []string
+	TurnstileSecret       string
+	TurnstileVerifyURL    string
+	TurnstileHostnames    map[string]struct{}
+	AllowInsecureWrites   bool
+	GitHubWebhookSecret   string
+	GitHubAllowedRepos    map[string]struct{}
+	GitHubUsername        string
+	GitHubAPIToken        string
+	GitHubRefreshInterval time.Duration
+	GitHubRequestTimeout  time.Duration
+	ReactionPageKeys      map[string]struct{}
+	StaticDir             string
+	PublicWriteLimit      int
+	PublicWriteWindow     time.Duration
+	TrustedProxyHeader    bool
+	ShutdownTimeout       time.Duration
+	MaxRequestBodyBytes   int64
 }
 
 func loadConfig() (Config, error) {
 	cfg := Config{
-		ListenAddr:          envOr("LISTEN_ADDR", "127.0.0.1:8787"),
-		DatabasePath:        envOr("DATABASE_PATH", "./data/beforeu.db"),
-		AdminToken:          os.Getenv("ADMIN_TOKEN"),
-		AnonymizationSecret: os.Getenv("ANONYMIZATION_SECRET"),
-		CORSAllowedOrigins:  splitCSV(envOr("CORS_ALLOWED_ORIGINS", "https://beforeugone.com")),
-		TurnstileSecret:     os.Getenv("TURNSTILE_SECRET"),
-		TurnstileVerifyURL:  envOr("TURNSTILE_VERIFY_URL", "https://challenges.cloudflare.com/turnstile/v0/siteverify"),
-		TurnstileHostnames:  stringSet(lowerStrings(splitCSV(envOr("TURNSTILE_ALLOWED_HOSTNAMES", "beforeugone.com")))),
-		GitHubWebhookSecret: os.Getenv("GITHUB_WEBHOOK_SECRET"),
-		GitHubAllowedRepos:  stringSet(splitCSV(os.Getenv("GITHUB_ALLOWED_REPOSITORIES"))),
-		ReactionPageKeys:    stringSet(splitCSV(envOr("REACTION_PAGE_KEYS", "/posts/hello-world.html"))),
-		StaticDir:           os.Getenv("STATIC_DIR"),
-		PublicWriteLimit:    10,
-		PublicWriteWindow:   time.Minute,
-		ShutdownTimeout:     10 * time.Second,
-		MaxRequestBodyBytes: 16 << 10,
+		ListenAddr:            envOr("LISTEN_ADDR", "127.0.0.1:8787"),
+		DatabasePath:          envOr("DATABASE_PATH", "./data/beforeu.db"),
+		AdminToken:            os.Getenv("ADMIN_TOKEN"),
+		AnonymizationSecret:   os.Getenv("ANONYMIZATION_SECRET"),
+		CORSAllowedOrigins:    splitCSV(envOr("CORS_ALLOWED_ORIGINS", "https://beforeugone.com")),
+		TurnstileSecret:       os.Getenv("TURNSTILE_SECRET"),
+		TurnstileVerifyURL:    envOr("TURNSTILE_VERIFY_URL", "https://challenges.cloudflare.com/turnstile/v0/siteverify"),
+		TurnstileHostnames:    stringSet(lowerStrings(splitCSV(envOr("TURNSTILE_ALLOWED_HOSTNAMES", "beforeugone.com")))),
+		GitHubWebhookSecret:   os.Getenv("GITHUB_WEBHOOK_SECRET"),
+		GitHubAllowedRepos:    stringSet(splitCSV(os.Getenv("GITHUB_ALLOWED_REPOSITORIES"))),
+		GitHubUsername:        envOr("GITHUB_USERNAME", "beforeugone520"),
+		GitHubAPIToken:        os.Getenv("GITHUB_API_TOKEN"),
+		GitHubRefreshInterval: 15 * time.Minute,
+		GitHubRequestTimeout:  10 * time.Second,
+		ReactionPageKeys:      stringSet(splitCSV(envOr("REACTION_PAGE_KEYS", "/posts/hello-world.html"))),
+		StaticDir:             os.Getenv("STATIC_DIR"),
+		PublicWriteLimit:      10,
+		PublicWriteWindow:     time.Minute,
+		ShutdownTimeout:       10 * time.Second,
+		MaxRequestBodyBytes:   16 << 10,
 	}
 
 	var err error
@@ -58,6 +66,12 @@ func loadConfig() (Config, error) {
 		return Config{}, err
 	}
 	if cfg.ShutdownTimeout, err = envDuration("SHUTDOWN_TIMEOUT", cfg.ShutdownTimeout); err != nil {
+		return Config{}, err
+	}
+	if cfg.GitHubRefreshInterval, err = envDuration("GITHUB_REFRESH_INTERVAL", cfg.GitHubRefreshInterval); err != nil {
+		return Config{}, err
+	}
+	if cfg.GitHubRequestTimeout, err = envDuration("GITHUB_REQUEST_TIMEOUT", cfg.GitHubRequestTimeout); err != nil {
 		return Config{}, err
 	}
 	if value := os.Getenv("TRUST_PROXY_HEADERS"); value != "" {
@@ -87,6 +101,9 @@ func loadConfig() (Config, error) {
 	if (cfg.GitHubWebhookSecret == "") != (len(cfg.GitHubAllowedRepos) == 0) {
 		return Config{}, fmt.Errorf("GITHUB_WEBHOOK_SECRET and GITHUB_ALLOWED_REPOSITORIES must be configured together")
 	}
+	if !validGitHubUsername(cfg.GitHubUsername) {
+		return Config{}, fmt.Errorf("GITHUB_USERNAME is invalid")
+	}
 	if cfg.TurnstileSecret != "" && len(cfg.TurnstileHostnames) == 0 {
 		return Config{}, fmt.Errorf("TURNSTILE_ALLOWED_HOSTNAMES is required when TURNSTILE_SECRET is configured")
 	}
@@ -99,6 +116,19 @@ func loadConfig() (Config, error) {
 		}
 	}
 	return cfg, nil
+}
+
+func validGitHubUsername(value string) bool {
+	if len(value) < 1 || len(value) > 39 || value[0] == '-' || value[len(value)-1] == '-' || strings.Contains(value, "--") {
+		return false
+	}
+	for _, r := range value {
+		if (r >= 'a' && r <= 'z') || (r >= 'A' && r <= 'Z') || (r >= '0' && r <= '9') || r == '-' {
+			continue
+		}
+		return false
+	}
+	return true
 }
 
 func envOr(name, fallback string) string {

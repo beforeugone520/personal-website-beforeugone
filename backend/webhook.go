@@ -146,6 +146,9 @@ func (a *API) handleGitHubWebhook(w http.ResponseWriter, r *http.Request) {
 	if replayed {
 		w.Header().Set("Idempotency-Replayed", "true")
 	}
+	if accepted {
+		a.github.Trigger()
+	}
 	writeJSON(w, http.StatusAccepted, map[string]bool{"accepted": accepted})
 }
 

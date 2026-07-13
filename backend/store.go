@@ -177,6 +177,35 @@ func (s *Store) Ready(ctx context.Context) error { return s.db.PingContext(ctx) 
 
 func timestamp(t time.Time) string { return t.UTC().Format(time.RFC3339Nano) }
 
+func (s *Store) GitHubActivity(ctx context.Context) (*GitHubActivitySnapshot, error) {
+	var payload, fetchedAt string
+	err := s.db.QueryRowContext(ctx, `SELECT payload_json, fetched_at FROM github_activity_cache WHERE id = 1`).Scan(&payload, &fetchedAt)
+	if errors.Is(err, sql.ErrNoRows) {
+		return nil, nil
+	}
+	if err != nil {
+		return nil, err
+	}
+	var snapshot GitHubActivitySnapshot
+	if err := json.Unmarshal([]byte(payload), &snapshot); err != nil {
+		return nil, fmt.Errorf("decode GitHub activity cache: %w", err)
+	}
+	snapshot.RefreshedAt = fetchedAt
+	return &snapshot, nil
+}
+
+func (s *Store) PutGitHubActivity(ctx context.Context, snapshot GitHubActivitySnapshot) error {
+	payload, err := json.Marshal(snapshot)
+	if err != nil {
+		return fmt.Errorf("encode GitHub activity cache: %w", err)
+	}
+	_, err = s.db.ExecContext(ctx, `INSERT INTO github_activity_cache(id, payload_json, fetched_at)
+		VALUES (1, ?, ?)
+		ON CONFLICT(id) DO UPDATE SET payload_json=excluded.payload_json, fetched_at=excluded.fetched_at`,
+		string(payload), snapshot.RefreshedAt)
+	return err
+}
+
 func (s *Store) PublicNow(ctx context.Context) (*NowStatus, error) {
 	var item NowStatus
 	var visible int

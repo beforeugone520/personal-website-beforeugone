@@ -1,4 +1,4 @@
-/* BeforeUgone Phase 1 public surfaces: Now, Ship Log, guestbook and reactions.
+/* BeforeUgone Phase 1 public surfaces: Now, Ship Log, GitHub activity, guestbook and reactions.
    Static-first: every region stays hidden until its read request succeeds. */
 (function () {
   'use strict';
@@ -58,6 +58,7 @@
       base: base,
       getNow: function () { return request('/v1/public/now'); },
       getShip: function (limit, cursor) { return request('/v1/public/ship?limit=' + (limit || 5) + (cursor ? '&cursor=' + encodeURIComponent(cursor) : '')); },
+      getGitHubActivity: function () { return request('/v1/public/github'); },
       getGuestbook: function (limit, cursor) { return request('/v1/public/guestbook?limit=' + (limit || 10) + (cursor ? '&cursor=' + encodeURIComponent(cursor) : '')); },
       postGuestbook: function (body, key) { return json('/v1/public/guestbook', 'POST', body, key); },
       getReactions: function (pageKey) { return request('/v1/public/reactions?page_key=' + encodeURIComponent(pageKey)); },
@@ -114,6 +115,19 @@
     var date = asDate(value);
     if (!date) return '';
     return new Intl.DateTimeFormat('zh-CN', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }).format(date);
+  }
+
+  function formatRelative(value) {
+    var date = asDate(value);
+    if (!date) return '';
+    var seconds = Math.max(0, Math.floor((Date.now() - date.getTime()) / 1000));
+    if (seconds < 60) return '刚刚';
+    if (seconds < 3600) return Math.floor(seconds / 60) + ' 分钟前';
+    if (seconds < 86400) return Math.floor(seconds / 3600) + ' 小时前';
+    var days = Math.floor(seconds / 86400);
+    if (days < 30) return days + ' 天前';
+    if (days < 365) return Math.floor(days / 30) + ' 个月前';
+    return Math.floor(days / 365) + ' 年前';
   }
 
   function setStatus(node, message, kind) {
@@ -272,6 +286,235 @@
       items.forEach(function (item) { list.appendChild(renderShipItem(item)); });
       document.getElementById('shipEmpty').hidden = items.length !== 0;
       section.hidden = false;
+    }).catch(function () {});
+  }
+
+  /* ───────── GitHub activity ───────── */
+  function contributionDate(value) {
+    var text = String(value || '');
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(text)) return null;
+    var date = new Date(text + 'T00:00:00Z');
+    return Number.isNaN(date.getTime()) ? null : date;
+  }
+
+  function normalizeContributions(items) {
+    if (!Array.isArray(items)) return [];
+    return items.map(function (item) {
+      var date = item && contributionDate(item.date);
+      if (!date) return null;
+      var count = Math.max(0, Number(item.count) || 0);
+      var level = Math.max(0, Math.min(4, Math.round(Number(item.level) || 0)));
+      return { date: String(item.date), count: count, level: level };
+    }).filter(Boolean).sort(function (a, b) { return a.date.localeCompare(b.date); });
+  }
+
+  function normalizeRepositories(items) {
+    if (!Array.isArray(items)) return [];
+    return items.filter(function (repo) { return repo && repo.name && repo.archived !== true; }).map(function (repo) {
+      return {
+        name: String(repo.name),
+        full_name: String(repo.full_name || repo.name),
+        description: String(repo.description || ''),
+        url: safeUrl(repo.url),
+        language: String(repo.language || ''),
+        language_color: String(repo.language_color || ''),
+        stars: Math.max(0, Math.round(Number(repo.stars) || 0)),
+        pushed_at: String(repo.pushed_at || ''),
+        archived: Boolean(repo.archived)
+      };
+    }).sort(function (a, b) {
+      var aTime = asDate(a.pushed_at);
+      var bTime = asDate(b.pushed_at);
+      return (bTime ? bTime.getTime() : 0) - (aTime ? aTime.getTime() : 0);
+    });
+  }
+
+  function heatCell(level, className) {
+    return el('span', 'heat-cell lv' + level + (className ? ' ' + className : ''));
+  }
+
+  function renderGitHubHeat(contributions, total) {
+    var host = document.getElementById('ghHeat');
+    if (!host || !contributions.length) return false;
+
+    var firstDate = contributionDate(contributions[0].date);
+    var pad = firstDate ? firstDate.getUTCDay() : 0;
+    var weekCount = Math.ceil((pad + contributions.length) / 7);
+    var chart = el('div', 'heat-chart');
+    var months = el('div', 'heat-months');
+    months.style.setProperty('--heat-weeks', weekCount);
+    var weekdays = el('div', 'heat-weekdays');
+    [['2', '一'], ['4', '三'], ['6', '五']].forEach(function (label) {
+      var node = el('span', '', label[1]);
+      node.style.gridRow = label[0];
+      weekdays.appendChild(node);
+    });
+
+    var grid = el('div', 'heat-grid');
+    for (var p = 0; p < pad; p++) {
+      var blank = heatCell(0, 'pad');
+      blank.setAttribute('aria-hidden', 'true');
+      grid.appendChild(blank);
+    }
+
+    var previousMonth = '';
+    var lastMonthWeek = -10;
+    contributions.forEach(function (item, index) {
+      var week = Math.floor((pad + index) / 7) + 1;
+      var month = item.date.slice(5, 7);
+      if (month !== previousMonth && week - lastMonthWeek >= 3) {
+        var monthLabel = el('span', '', Number(month) + '月');
+        monthLabel.style.gridColumn = week + ' / span 3';
+        months.appendChild(monthLabel);
+        lastMonthWeek = week;
+      }
+      previousMonth = month;
+
+      var cell = heatCell(item.level);
+      var tooltip = item.date + ' · ' + item.count + ' 次贡献';
+      cell.dataset.tooltip = tooltip;
+      grid.appendChild(cell);
+    });
+
+    chart.appendChild(el('span', 'heat-corner'));
+    chart.appendChild(months);
+    chart.appendChild(weekdays);
+    chart.appendChild(grid);
+
+    var scroll = el('div', 'heat-scroll');
+    scroll.appendChild(chart);
+    var tooltip = el('div', 'heat-tooltip');
+    tooltip.setAttribute('role', 'tooltip');
+    tooltip.hidden = true;
+    function positionTooltip(event) {
+      var bounds = host.getBoundingClientRect();
+      var x = Math.max(72, Math.min(bounds.width - 72, event.clientX - bounds.left));
+      tooltip.style.left = x + 'px';
+      tooltip.style.top = Math.max(0, event.clientY - bounds.top - 10) + 'px';
+    }
+    grid.addEventListener('pointerover', function (event) {
+      var cell = event.target.closest && event.target.closest('.heat-cell[data-tooltip]');
+      if (!cell || !grid.contains(cell)) return;
+      tooltip.textContent = cell.dataset.tooltip;
+      tooltip.hidden = false;
+      positionTooltip(event);
+    });
+    grid.addEventListener('pointermove', function (event) {
+      if (tooltip.hidden) return;
+      positionTooltip(event);
+    });
+    grid.addEventListener('pointerleave', function () { tooltip.hidden = true; });
+
+    var range = el('span', 'heat-range', contributions[0].date + ' — ' + contributions[contributions.length - 1].date);
+    var legend = el('span', 'heat-legend');
+    legend.appendChild(el('span', '', '少'));
+    for (var level = 0; level <= 4; level++) {
+      var sample = heatCell(level);
+      sample.setAttribute('aria-hidden', 'true');
+      legend.appendChild(sample);
+    }
+    legend.appendChild(el('span', '', '多'));
+    var footer = el('div', 'heat-footer');
+    footer.appendChild(range);
+    footer.appendChild(legend);
+
+    host.textContent = '';
+    host.appendChild(scroll);
+    host.appendChild(tooltip);
+    host.appendChild(footer);
+    host.setAttribute('aria-label', 'GitHub 过去一年共 ' + total + ' 次贡献，从 ' + contributions[0].date + ' 到 ' + contributions[contributions.length - 1].date);
+    requestAnimationFrame(function () { scroll.scrollLeft = scroll.scrollWidth; });
+    return true;
+  }
+
+  function safeLanguageColor(value) {
+    var color = String(value || '');
+    return /^#[0-9a-f]{6}$/i.test(color) ? color : '#8b8b8b';
+  }
+
+  function renderGitHubRepositories(repositories) {
+    var host = document.getElementById('ghRepos');
+    if (!host || !repositories.length) return false;
+    host.textContent = '';
+    repositories.slice(0, 6).forEach(function (repo) {
+      var row = el(repo.url ? 'a' : 'article', 'gh-repo');
+      if (repo.url) { row.href = repo.url; row.target = '_blank'; row.rel = 'noopener'; }
+
+      var top = el('div', 'gh-r-top');
+      var name = el('span', 'gh-r-name', repo.name);
+      top.appendChild(name);
+      var signals = el('span', 'gh-r-signals');
+      if (repo.stars) signals.appendChild(el('span', 'gh-r-star', '★ ' + repo.stars));
+      signals.appendChild(el('span', 'gh-r-arrow', '↗'));
+      signals.lastChild.setAttribute('aria-hidden', 'true');
+      top.appendChild(signals);
+      row.appendChild(top);
+      if (repo.description) row.appendChild(el('p', 'gh-r-desc', repo.description));
+
+      var facts = el('div', 'gh-r-meta');
+      if (repo.language) {
+        var language = el('span', 'gh-r-lang');
+        var dot = el('i');
+        dot.style.backgroundColor = safeLanguageColor(repo.language_color);
+        dot.setAttribute('aria-hidden', 'true');
+        language.appendChild(dot);
+        language.appendChild(document.createTextNode(repo.language));
+        facts.appendChild(language);
+      }
+      var updated = formatRelative(repo.pushed_at);
+      if (updated) facts.appendChild(el('span', 'gh-r-upd', '更新于 ' + updated));
+      row.appendChild(facts);
+      host.appendChild(row);
+    });
+    return true;
+  }
+
+  function initGitHubActivity() {
+    var section = document.getElementById('ghLive');
+    if (!section || !api.getGitHubActivity) return;
+    api.getGitHubActivity().then(function (payload) {
+      var data = payload && payload.data;
+      if (!data) return;
+
+      var contributions = normalizeContributions(data.contributions);
+      var repositories = normalizeRepositories(data.repositories);
+      window.BeforeUGitHubRepositories = repositories.slice();
+      try {
+        window.dispatchEvent(new CustomEvent('beforeu:github-repositories', { detail: { repositories: repositories.slice() } }));
+      } catch (e) {}
+
+      if (!contributions.length && !repositories.length) return;
+      var suppliedTotal = Number(data.total_contributions);
+      var total = Number.isFinite(suppliedTotal) && suppliedTotal >= 0
+        ? Math.round(suppliedTotal)
+        : contributions.reduce(function (sum, item) { return sum + item.count; }, 0);
+      document.getElementById('ghTotal').textContent = String(total);
+
+      var refreshed = document.getElementById('ghRefreshed');
+      var refreshedText = formatMoment(data.refreshed_at);
+      if (refreshedText) {
+        refreshed.dateTime = data.refreshed_at;
+        refreshed.textContent = '后端同步于 ' + refreshedText;
+      }
+
+      var profile = document.getElementById('ghProfile');
+      var profileURL = safeUrl(data.profile_url);
+      if (profileURL) {
+        profile.href = profileURL;
+        profile.textContent = data.username ? '@' + String(data.username) : 'GitHub 主页';
+        profile.hidden = false;
+      }
+
+      var hasHeat = renderGitHubHeat(contributions, total);
+      var hasRepositories = renderGitHubRepositories(repositories);
+      var activity = section.querySelector('.gh-activity');
+      var repoHead = section.querySelector('.gh-repo-head');
+      var repoHost = document.getElementById('ghRepos');
+      if (activity) activity.hidden = !hasHeat;
+      if (repoHead) repoHead.hidden = !hasRepositories;
+      if (repoHost) repoHost.hidden = !hasRepositories;
+      section.hidden = false;
+      requestAnimationFrame(function () { section.classList.add('is-ready'); });
     }).catch(function () {});
   }
 
@@ -501,6 +744,7 @@
   function init() {
     initNow();
     initShip();
+    initGitHubActivity();
     initGuestbook();
     initReactions();
   }
