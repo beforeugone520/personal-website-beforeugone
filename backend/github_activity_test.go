@@ -152,6 +152,22 @@ func TestParseGitHubContributionsRejectsIncompleteOrMismatchedHTML(t *testing.T)
 	}
 }
 
+func TestParseGitHubContributionsAcceptsWeekAlignedRollingRange(t *testing.T) {
+	for _, days := range []int{365, 367, 371} {
+		t.Run(fmt.Sprintf("%d days", days), func(t *testing.T) {
+			contributions, total, err := parseGitHubContributions(
+				[]byte(testGitHubContributionsHTML("beforeugone520", days)), "beforeugone520",
+			)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if len(contributions) != days || total != 10 {
+				t.Fatalf("contributions=%d total=%d", len(contributions), total)
+			}
+		})
+	}
+}
+
 func TestGitHubActivityRefresherThrottlesTokenlessAttempts(t *testing.T) {
 	var requests atomic.Int32
 	upstream := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {

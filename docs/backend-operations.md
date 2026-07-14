@@ -163,7 +163,7 @@ API 先通过外部健康检查后，再发布 GitHub Pages 的动态入口：
 
 浏览器只调用 `GET /v1/public/github`，不得直接调用 GitHub GraphQL、REST 或 contributions HTML，不得把 `GITHUB_API_TOKEN` 放进静态资源，也不得把公开请求变成同步 GitHub 代理。服务启动会立即尝试刷新，此后按 `GITHUB_REFRESH_INTERVAL` 运行；每次上游请求受 `GITHUB_REQUEST_TIMEOUT` 限制。配置 token 时使用官方 GitHub GraphQL；未配置时组合 GitHub REST 的公开仓库元数据与 GitHub 公开 rolling contributions HTML，且包括 Webhook 唤醒在内的无 token 尝试至少间隔 2 分钟。任一模式只有在结果完整并通过校验后，才原子替换 `github_activity_cache` 的 last-good singleton。
 
-rolling contributions HTML 是 GitHub 的内部公开网页接口，不是稳定的版本化 API；页面结构变化或解析失败按普通上游刷新失败处理。此时保留旧快照并记录去敏错误；有与当前 `GITHUB_USERNAME` 匹配的快照时 public route 继续返回 `200` 和原 `refreshed_at`，没有匹配快照时返回 `503`。`/healthz` 不依赖 GitHub，`/readyz` 仍只表示 SQLite 可用；HTML 解析失败不会改变二者，activity 新鲜度要单独看响应中的 `refreshed_at` 和 refresh 日志。
+rolling contributions HTML 是 GitHub 的内部公开网页接口，不是稳定的版本化 API；其日历按完整周对齐，完整连续窗口可包含 365 至 371 天。页面结构变化、超出该范围或解析失败按普通上游刷新失败处理。此时保留旧快照并记录去敏错误；有与当前 `GITHUB_USERNAME` 匹配的快照时 public route 继续返回 `200` 和原 `refreshed_at`，没有匹配快照时返回 `503`。`/healthz` 不依赖 GitHub，`/readyz` 仍只表示 SQLite 可用；HTML 解析失败不会改变二者，activity 新鲜度要单独看响应中的 `refreshed_at` 和 refresh 日志。
 
 ### Webhook
 

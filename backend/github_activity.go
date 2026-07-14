@@ -26,6 +26,8 @@ const (
 	githubUserAgent             = "beforeu-api"
 	githubRepositoryLimit       = 6
 	githubPublicMinimumRefresh  = 2 * time.Minute
+	githubContributionMinDays   = 365
+	githubContributionMaxDays   = 371
 )
 
 const githubActivityQuery = `query PublicGitHubActivity($login: String!) {
@@ -514,7 +516,7 @@ func parseGitHubContributions(body []byte, username string) ([]GitHubContributio
 	sort.Slice(contributions, func(i, j int) bool {
 		return contributions[i].Date < contributions[j].Date
 	})
-	if len(contributions) != 365 && len(contributions) != 366 {
+	if len(contributions) < githubContributionMinDays || len(contributions) > githubContributionMaxDays {
 		return nil, 0, errors.New("GitHub contributions returned incomplete day data")
 	}
 	if contributions[0].Date != from.Format("2006-01-02") ||
@@ -657,7 +659,8 @@ func validateGitHubActivitySnapshot(snapshot GitHubActivitySnapshot, expectedUse
 	if !strings.EqualFold(snapshot.Username, expectedUsername) || !validGitHubURL(snapshot.ProfileURL) {
 		return errors.New("GitHub returned invalid user data")
 	}
-	if snapshot.TotalContributions < 0 || (len(snapshot.Contributions) != 365 && len(snapshot.Contributions) != 366) {
+	if snapshot.TotalContributions < 0 || len(snapshot.Contributions) < githubContributionMinDays ||
+		len(snapshot.Contributions) > githubContributionMaxDays {
 		return errors.New("GitHub returned incomplete contribution data")
 	}
 	var previous time.Time

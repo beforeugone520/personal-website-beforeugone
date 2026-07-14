@@ -441,7 +441,7 @@ Azure NSG 是否已经把 `80/443` 来源限制为 Cloudflare CIDR，尚未从 A
 - `GITHUB_REQUEST_TIMEOUT=10s`
 - `GITHUB_API_TOKEN`：可选、server-only、公开读取最低权限，禁止 `read:user`/`user`/`repo` 及私有访问；真实值不得输出
 
-服务启动会立即尝试一次 refresh，此后每 15 分钟周期执行。配置 token 时使用官方 GitHub GraphQL；留空时使用 GitHub REST 公开仓库元数据与公开 rolling contributions HTML，且包括 webhook 唤醒在内的尝试至少间隔 2 分钟。HTML endpoint 是内部公开网页接口而非稳定 API，页面结构变化或解析失败按上游失败处理：只写去敏日志并保留旧 snapshot，不影响 `/healthz` 或 `/readyz`。任一模式的完整成功结果才原子替换 `github_activity_cache` singleton。公开路由只读取 SQLite，不应因为访客请求而向 GitHub 发请求。已接受 webhook 可以发非阻塞 refresh 信号，但 webhook 响应不得等待 GitHub。
+服务启动会立即尝试一次 refresh，此后每 15 分钟周期执行。配置 token 时使用官方 GitHub GraphQL；留空时使用 GitHub REST 公开仓库元数据与公开 rolling contributions HTML，且包括 webhook 唤醒在内的尝试至少间隔 2 分钟。HTML endpoint 是内部公开网页接口而非稳定 API；其完整周对齐窗口可包含 365 至 371 个连续日期，页面结构变化、超出范围或解析失败按上游失败处理：只写去敏日志并保留旧 snapshot，不影响 `/healthz` 或 `/readyz`。任一模式的完整成功结果才原子替换 `github_activity_cache` singleton。公开路由只读取 SQLite，不应因为访客请求而向 GitHub 发请求。已接受 webhook 可以发非阻塞 refresh 信号，但 webhook 响应不得等待 GitHub。
 
 部署与配置修改都必须先确认。上线时应按本手册第 6 节的二进制、checksum、备份和观察流程执行，并完成以下检查后再更新生产基线：
 
