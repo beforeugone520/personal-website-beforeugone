@@ -423,7 +423,7 @@ func TestAPIGitHubWebhookSignatureAllowlistAndDedupe(t *testing.T) {
 	api, _ := testAPI(t, nil)
 	api.github.token = "test-token"
 	handler := api.Handler()
-	payload := []byte(`{"ref":"refs/heads/main","compare":"https://github.com/beforeugone/site/compare/a...b","repository":{"full_name":"beforeugone/site"},"commits":[{"message":"First"},{"message":"Ship it"}],"head_commit":{"message":"Ship it","url":"https://github.com/beforeugone/site/commit/b","timestamp":"2026-07-12T10:00:00Z"}}`)
+	payload := []byte(`{"ref":"refs/heads/main","compare":"https://github.com/beforeugone/site/compare/a...b","repository":{"full_name":"beforeugone/site"},"commits":[{"message":"feat: add activity"},{"message":"fix: align contribution weeks"}],"head_commit":{"message":"fix: align contribution weeks","url":"https://github.com/beforeugone/site/commit/b","timestamp":"2026-07-12T10:00:00Z"}}`)
 	signature := githubSignature(payload, "github-secret")
 	send := func(delivery, sig string, body []byte) *httptest.ResponseRecorder {
 		req := httptest.NewRequest(http.MethodPost, "/v1/webhooks/github", bytes.NewReader(body))
@@ -457,7 +457,8 @@ func TestAPIGitHubWebhookSignatureAllowlistAndDedupe(t *testing.T) {
 	default:
 	}
 	ships := requestJSON(t, handler, http.MethodGet, "/v1/public/ship", nil, nil)
-	if ships.Code != http.StatusOK || strings.Count(ships.Body.String(), `"source":"github_push"`) != 1 || !strings.Contains(ships.Body.String(), "Pushed 2 commits") {
+	if ships.Code != http.StatusOK || strings.Count(ships.Body.String(), `"source":"github_push"`) != 1 ||
+		strings.Contains(ships.Body.String(), "Pushed 2 commits") || !strings.Contains(ships.Body.String(), "2 个提交一起落地") {
 		t.Fatalf("ships = %d %s", ships.Code, ships.Body.String())
 	}
 	deniedPayload := bytes.ReplaceAll(payload, []byte("beforeugone/site"), []byte("someone/else"))

@@ -1,6 +1,6 @@
 # Phase 1 后端部署与运维
 
-> 当前状态：Phase 1 已于 2026-07-13 部署到 Hermes；`api.beforeugone.com` 经 Cloudflare/Caddy 提供服务，`beforeugone.com` 仍由 GitHub Pages 托管。核心生产路径已验收，真实浏览器 Turnstile 写入和代码回滚演练仍待完成。仓库中的后端 GitHub activity snapshot 属于待发布变更，尚未部署或完成生产配置与验收。
+> 当前状态：Phase 1 已于 2026-07-13 部署到 Hermes；GitHub activity snapshot 与新版首页于 2026-07-14 完成生产验收。`api.beforeugone.com` 经 Cloudflare/Caddy 提供服务，`beforeugone.com` 仍由 GitHub Pages 托管。真实浏览器 Turnstile 写入、Azure NSG 控制面复核和代码回滚演练仍待完成。
 
 服务器 OpenClaw 的日常巡检、故障处理和操作授权边界见 [`openclaw-backend-operations.md`](openclaw-backend-operations.md)。本文件仍是人类维护的部署、恢复与回滚基准。
 
@@ -135,18 +135,15 @@ API 先通过外部健康检查后，再发布 GitHub Pages 的动态入口：
 - GitHub Pages 已发布动态前端；本地浏览器回归覆盖留言和回应写入，生产浏览器回归覆盖桌面、390/320 px、终端、动态读取和 API 失败降级。真实 Turnstile token 写入仍按上项保留。
 - Azure NSG 的 Cloudflare-only 来源限制尚未从本机控制面复核；Caddy 的 Cloudflare CIDR gate 已验证会拒绝直接 origin 请求。
 
-### GitHub activity snapshot 待发布清单
+### 2026-07-14 GitHub activity 生产验收记录
 
-下面各项均未包含在 2026-07-13 验收记录中，完成前不得声称新 activity 路径已部署：
-
-1. 在开发机对包含 `0002_github_activity_cache.sql` 的候选版本运行 `go test ./...`、`go vet ./...`，构建并记录 commit 与 SHA-256。
-2. 先完成并校验一次 WAL 一致性备份，再按版本化二进制流程部署；启动后只读确认 `schema_migrations` 已记录 `0002_github_activity_cache.sql`，且进程没有重启循环。
-3. 经用户确认后，在 `/etc/beforeu-api.env` 增加 `GITHUB_USERNAME`、`GITHUB_REFRESH_INTERVAL`、`GITHUB_REQUEST_TIMEOUT`；`GITHUB_API_TOKEN` 可留空以启用无认证 fallback。若选择配置 token，只能从受控密码管理位置写入公开只读 token，并明确排除 `read:user`/`user`/`repo`、私有访问和可读取非公开贡献的权限；不得在终端回显、聊天、日志或仓库中展示 token。
-4. 重启后确认后台首次刷新成功并记录实际数据源模式，SQLite 中存在 last-good singleton；随后确认 15 分钟周期刷新会原子更新时间且失败不会清空旧快照。
-5. 在无 token 模式下确认 GitHub REST 仓库元数据与公开 rolling contributions HTML 能生成完整快照；再以受控的 HTML 解析或上游失败验证匹配用户名的旧快照继续返回 `200`，`/healthz` 与 `/readyz` 不受影响，空缓存或用户名不匹配的缓存返回 `503`。同时验证 local 与 public `GET /v1/public/github` 的完整数据和 `Cache-Control: public, max-age=300, stale-while-revalidate=3600`。
-6. 发布 GitHub Pages 前端后，在桌面、390 px、320 px、深浅主题、键盘和 reduced-motion 下检查 activity 布局；断开 API 时静态作品与正文仍须可读。
-7. 发送一次受控的已签名、白名单内 push webhook，确认 Ship delivery 仍幂等，且可唤醒刷新但 webhook 响应不等待 GitHub 上游。
-8. 观察至少 10 分钟的 API journal、Caddy 5xx、GitHub refresh 错误、内存和数据库增长，再把本文件、OpenClaw 手册中的生产基线、commit 与 checksum 更新为实测值。
+- 生产后端为 commit `a31f299`，Linux/amd64 静态二进制 SHA-256 为 `1f951c5289e25e98975dae3d1ed67cba102c1a9afdd87dc18bc9d79cce7431a4`。候选版本通过 `go test ./...`、race test、`go vet ./...` 和 `govulncheck ./...`。
+- 覆盖前已生成 WAL 一致性备份 `/var/backups/beforeu-api/daily/beforeu-20260714T032828Z.sqlite3.gz`，并保留版本化旧二进制。`schema_migrations` 已记录 `0001_phase1.sql` 与 `0002_github_activity_cache.sql`；DB/WAL/SHM 所有权和权限保持不变。
+- 生产使用空 `GITHUB_API_TOKEN` 的 REST + public HTML fallback。03:30:02 UTC 启动刷新生成 367 个连续日期、6 个仓库的完整快照；03:45:03 UTC 的首个 15 分钟周期刷新再次推进 `refreshed_at`，贡献总数由 233 更新为 236。
+- local/public `GET /v1/public/github` 均返回 `200`；公网响应带有 `Cache-Control: public, max-age=300, stale-while-revalidate=3600`。此前候选版本遇到跨日 367 天窗口解析失败时，public route 持续返回旧 snapshot 且 health/ready 保持正常，证明 last-good 保留有效；commit `a31f299` 已修正该完整周对齐范围。
+- 真实白名单内 push 已通过生产 webhook 生成单条 Ship 记录；签名、delivery 幂等和非阻塞唤醒由生产路径与后端测试共同覆盖。
+- GitHub Pages 已发布新版 activity 区。生产 Playwright 验收覆盖桌面深浅主题、390 px、320 px、键盘顺序、reduced-motion 和 API `503` 降级，共 6 项通过。
+- 部署后观察超过 20 分钟：`NRestarts=0`，内存约 13 MiB，API/Caddy error journal 为空，未出现 refresh failure 或 5xx 服务错误。
 
 ## 5. Turnstile
 
@@ -176,6 +173,13 @@ rolling contributions HTML 是 GitHub 的内部公开网页接口，不是稳定
 - Active：开启
 
 同时把完整的 `owner/repository` 写入 `GITHUB_ALLOWED_REPOSITORIES`。后端必须同时通过 `X-Hub-Signature-256`、`X-GitHub-Delivery` 去重、事件类型和仓库白名单检查，不能只依赖 GitHub 来源 IP。重送相同 delivery 不应生成第二条 Ship；不支持的事件返回 `400` 且不写库。
+
+仓库候选版本会在写入时把 Conventional Commit 类型和仓库名整理成稳定的人话标题；同一 delivery 的模板选择固定，原始 head subject 仅作为具体摘要并继续按不可信远程字符串处理。静态候选前端也会兼容展示生产库中已经存在的旧式 `Pushed ...` / `Released ...` 行，并在 Now 下引用 14 天内最新一条 Ship。该改动不新增 route、env 或 migration，完成下列发布验收前不能描述为生产后端能力：
+
+1. 运行后端单测、race test 与 `go vet ./...`，记录候选 commit 和二进制 SHA-256；发布前生成并校验 WAL 一致性备份，保留当前 `a31f299` 二进制。
+2. 部署后发送一次受控的白名单内 Conventional Commit push，确认新 Ship 标题不包含原始 `Pushed ...`，摘要、链接、delivery 幂等和 activity 非阻塞唤醒仍正确。
+3. 发布静态前端后确认历史旧式行也显示为人话标题，Now 最近动作只引用 14 天内的事件；API 失败时 Now、Ship 继续静默降级。
+4. 完成 public route、桌面/320 px、深浅主题检查和至少 10 分钟观察，再同步本文、OpenClaw 手册中的生产 commit、checksum 与验收日期。
 
 已验证且接受的 push/release delivery 可以向后台 refresher 发送非阻塞唤醒信号。无 token 模式会合并 2 分钟窗口内的重复尝试，避免耗尽 GitHub 未认证 REST 限额。该信号只是尽快刷新 activity 的提示：Webhook 的成功、幂等与响应时间不能依赖任一 GitHub 上游是否可用。
 
@@ -266,6 +270,6 @@ curl --fail http://127.0.0.1:8787/readyz
 4. `systemctl restart beforeu-api`，随后检查 `/readyz`、公共读取、一次受控管理读取以及静态站降级。
 5. 观察 journal、Caddy 5xx 和资源占用至少 10 分钟。
 
-Hermes 当前只有活动 API 二进制，没有可直接使用的历史 API 二进制。下一次发布覆盖前必须把当前文件保存为带 UTC 时间与旧 commit 的版本化 rollback artifact，并记录 SHA-256；不能把旧默认 Caddy 配置备份当作 API 回滚包。
+Hermes 已保留版本化的 `9815949` 旧二进制；下一次覆盖前仍必须把当前 `a31f299` 文件保存为带 UTC 时间与 commit 的新 rollback artifact，并记录 SHA-256。使用任何历史二进制前都要核对 checksum、migration 兼容性和对应数据库备份，不能把旧默认 Caddy 配置备份当作 API 回滚包。
 
 回滚代码时恢复上一版本二进制。若新版本已经执行了旧二进制不理解的 schema migration，则必须同时恢复发布前数据库；不能只降级二进制。回滚后再次执行健康检查和一条真实读取，不以“进程正在运行”代替业务验证。

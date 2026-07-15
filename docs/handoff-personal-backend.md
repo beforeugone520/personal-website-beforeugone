@@ -1,7 +1,7 @@
 # BeforeUgone 个人站动态后端与 Agent 中枢 Handoff
 
-> 状态：Phase 1 已部署到 Hermes/Azure，核心生产路径已验收；真实浏览器 Turnstile 写入和代码回滚演练仍待完成；后端 GitHub activity snapshot 为仓库内待发布扩展，尚未完成生产配置或验收；Phase 2 至 Phase 4 仍为方案
-> 更新日期：2026-07-13
+> 状态：Phase 1 已部署到 Hermes/Azure，核心生产路径和后端 GitHub activity snapshot 已验收；真实浏览器 Turnstile 写入和代码回滚演练仍待完成；Phase 2 至 Phase 4 仍为方案
+> 更新日期：2026-07-14
 
 ## 1. 目标
 
@@ -21,7 +21,7 @@
 - 托管：GitHub Pages；域名和边缘能力由 Cloudflare 管理。
 - 仓库：`beforeugone520/personal-website-beforeugone`。
 - 前端：主体为静态 HTML/CSS/JavaScript；主题滑块是独立 Vue/Vite 子工程。
-- 已有动态感：GitHub 仓库动态、贡献热力图、终端模式、Konami 彩蛋。当前生产 GitHub activity 仍由浏览器访问外部源；改为后端 last-good snapshot 的版本尚待发布。
+- 已有动态感：GitHub 仓库动态、贡献热力图、终端模式、Konami 彩蛋。生产 GitHub activity 由后端生成 last-good snapshot，浏览器只读取 `GET /v1/public/github`。
 - Phase 1 Go/SQLite API 已在 Hermes 通过 systemd 运行，生产域名为 `https://api.beforeugone.com`。
 - Caddy、真实 secret、Cloudflare DNS/Full (strict)、Turnstile 和 GitHub webhook 已应用；备份校验、临时恢复和重启持久化检查已通过。
 - Hermes OpenClaw 已获得独立的后端代管手册，只作为受约束的服务器运维者；详细权限边界见 [`openclaw-backend-operations.md`](openclaw-backend-operations.md)。
@@ -32,10 +32,10 @@
 
 ### 3.1 个人站动态层
 
-动态层候选能力如下；Phase 1 已上线第 1 至 4 项，第 5 项是本次尚待生产发布的扩展，第 6 至 9 项尚未实现：
+动态层候选能力如下；Phase 1 已上线第 1 至 5 项，第 6 至 9 项尚未实现：
 
 1. `Now`：首页显示站主当前状态和更新时间；由本机管理 API 更新。OpenClaw 只能在用户确认后以运维者身份调用，并无应用内集成。
-2. `Ship Log`：聚合 GitHub Push/Release 与手动记录，形成简洁的完成事项时间流。
+2. `Ship Log`：聚合 GitHub Push/Release 与手动记录，形成简洁的完成事项时间流。仓库候选版本会把 Conventional Commit 和仓库名整理为稳定的人话标题，并在 Now 下引用 14 天内的最近动作；该展示改进仍待生产发布验收。
 3. 留一句话：匿名或昵称留言，先审后发，可显示站主回复。
 4. 文章轻回应：有共鸣、学到了、想看后续、没看懂；无需账号，每设备每篇每类一次。
 5. GitHub activity snapshot：后端配置可选 token 时使用官方 GraphQL，未配置时组合 GitHub REST 公开仓库元数据与公开 rolling contributions HTML；SQLite 只保留完整 last-good snapshot，静态前端只调用 `GET /v1/public/github`。
@@ -89,7 +89,7 @@ Caddy -> beforeu-api -> SQLite
 OpenClaw Gateway 127.0.0.1:18789（独立运行，仅由 OpenClaw 作为运维者使用）
 ```
 
-本次 GitHub activity 扩展发布后，浏览器只从 `beforeu-api` 读取公开快照；后台在配置可选服务端 token 时调用官方 GitHub GraphQL，否则组合 GitHub REST 与公开 rolling contributions HTML，并把完整 last-good snapshot 存入同一 SQLite。HTML 是 GitHub 的内部公开网页接口，解析或外部刷新失败不会把 GitHub 请求转嫁给访客、清空已有快照或影响 API 健康就绪状态。该路径在完成 [`backend-operations.md`](backend-operations.md) 的待发布清单前不属于当前生产架构。
+GitHub activity 已按当前架构运行：浏览器只从 `beforeu-api` 读取公开快照；后台在配置可选服务端 token 时调用官方 GitHub GraphQL，否则组合 GitHub REST 与公开 rolling contributions HTML，并把完整 last-good snapshot 存入同一 SQLite。HTML 是 GitHub 的内部公开网页接口，解析或外部刷新失败不会把 GitHub 请求转嫁给访客、清空已有快照或影响 API 健康就绪状态。
 
 后续 Phase 2 至 Phase 4 才会引入 Relay：
 
@@ -147,7 +147,7 @@ Phase 1 已在生产实现：
 | `github_deliveries` | GitHub delivery 去重 |
 | `audit_log` | 管理操作和 webhook 写入审计 |
 
-仓库内待发布的 Phase 1 扩展：
+2026-07-14 部署的 Phase 1 扩展：
 
 | 表 | 用途 |
 | --- | --- |
@@ -183,14 +183,9 @@ GET  /v1/public/now
 GET  /v1/public/ship
 GET  /v1/public/guestbook
 GET  /v1/public/reactions?page_key=...
+GET  /v1/public/github
 POST /v1/public/guestbook
 POST /v1/public/reactions
-```
-
-仓库内待发布的公开读取扩展：
-
-```text
-GET  /v1/public/github
 ```
 
 该路由只读 SQLite last-good cache；它不在访客请求中同步代理 GitHub。与当前 `GITHUB_USERNAME` 匹配的旧快照即使最新后台刷新失败也继续返回 `200`；缓存为空或仍属于先前配置的用户名时返回 `503`。
@@ -250,10 +245,10 @@ GET  /v1/events/ws
 - [x] 增加一致性备份脚本、健康检查、应用层限流、幂等和基础审计。
 - [x] 在 Hermes/Azure 安装服务并配置真实 secret。
 - [x] 配置 Cloudflare DNS、Full (strict)、Turnstile、边缘限流和 GitHub webhook。
-- [ ] 部署 GitHub activity cache migration、后台初次/周期刷新和 `GET /v1/public/github`；以无 token fallback 完成首次刷新，发布前端并完成缓存、失败保留、Webhook 唤醒和响应式验收。
+- [x] 部署 GitHub activity cache migration、后台初次/周期刷新和 `GET /v1/public/github`；以无 token fallback 完成首次刷新，发布前端并完成缓存、失败保留、Webhook 唤醒和响应式验收。
 - [ ] 完成真实浏览器留言审核闭环、Azure NSG 复核和代码回滚演练；重启持久化、API 故障降级和临时备份恢复已通过。
 
-验收：主站动态功能可用，服务器重启后数据不丢，API 故障不拖垮首页。原 Phase 1 核心生产路径已于 2026-07-13 通过；GitHub activity 扩展和其他剩余项见上方清单及 [`backend-operations.md`](backend-operations.md) 的生产验收/待发布记录。
+验收：主站动态功能可用，服务器重启后数据不丢，API 故障不拖垮首页。原 Phase 1 核心生产路径已于 2026-07-13 通过，GitHub activity 扩展于 2026-07-14 通过；其他剩余项见上方清单及 [`backend-operations.md`](backend-operations.md) 的生产验收记录。
 
 ### Phase 2：Relay PWA
 

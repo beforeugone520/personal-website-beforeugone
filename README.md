@@ -25,9 +25,11 @@
 
 ## 动态后端
 
-Phase 1 已部署到 Hermes/Azure，并通过 Cloudflare/Caddy 由 `https://api.beforeugone.com` 提供 Now、Ship Log、留言审核、文章轻回应、GitHub webhook、健康检查、限流和基础审计。
+Phase 1 已部署到 Hermes/Azure，并通过 Cloudflare/Caddy 由 `https://api.beforeugone.com` 提供 Now、Ship Log、留言审核、文章轻回应、GitHub activity、GitHub webhook、健康检查、限流和基础审计。
 
-仓库已加入由后端周期刷新、SQLite 保存 last-good snapshot 的 GitHub activity 路径：配置可选的 server-only token 时使用官方 GitHub GraphQL，未配置时组合 GitHub REST 公开仓库元数据与公开 rolling contributions HTML。该扩展及其新版首页尚待生产部署与验收，不能并入上面的已部署清单。待办以 [`docs/backend-operations.md`](docs/backend-operations.md) 为准。
+GitHub activity 由后端周期刷新并在 SQLite 保存 last-good snapshot：配置可选的 server-only token 时使用官方 GitHub GraphQL，未配置时组合 GitHub REST 公开仓库元数据与公开 rolling contributions HTML。静态前端只读取后端快照，上游失败不会把 GitHub 请求转嫁给访客或清空上一份完整结果。
+
+仓库候选版本会把 GitHub Push/Release 确定性地整理为克制的人话 Ship 记录，并在 Now 下补充 14 天内的最近动作；当前生产基线仍以 [`docs/backend-operations.md`](docs/backend-operations.md) 的发布记录为准。
 
 静态站不迁移，仍由 GitHub Pages 承载；Azure 只运行 `api.beforeugone.com` 的轻量 Go/SQLite 服务。后续 OpenClaw 私人消息中枢仍处于规划阶段。
 

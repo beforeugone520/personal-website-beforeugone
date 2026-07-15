@@ -5,7 +5,8 @@
 - This repository is the static source for `https://beforeugone.com/`.
 - Production remains on GitHub Pages with Cloudflare managing the custom domain/edge. Do not migrate the static site to the Azure VM unless the user explicitly changes this decision.
 - Phase 1 is deployed on Hermes/Azure: the Go/SQLite API serves `https://api.beforeugone.com` behind Cloudflare and Caddy, while `assets/site-dynamic.js` remains on GitHub Pages. Keep the remaining production checks in `docs/backend-operations.md` visible until they pass.
-- The backend-owned GitHub activity snapshot and redesigned activity section are a pending production rollout. Do not describe `/v1/public/github`, its cache migration, or its server-side refresh as deployed until the deploy/config/verification checklist in `docs/backend-operations.md` passes.
+- The backend-owned GitHub activity snapshot and redesigned activity section were deployed on 2026-07-14. Production serves `/v1/public/github` from a SQLite last-good cache refreshed server-side; keep its freshness and fallback checks in `docs/backend-operations.md` and `docs/openclaw-backend-operations.md` current.
+- Humanized GitHub Ship copy and the Now recent-activity cue are repository changes awaiting production deployment. Until the rollout checklist in `docs/backend-operations.md` passes, production webhook rows may still be stored with the older raw GitHub wording even though the candidate frontend presents legacy rows more readably.
 - Hermes OpenClaw may act as a server operator under `docs/openclaw-backend-operations.md`; that does not mean the website is connected to OpenClaw. Preserve the runbook's confirmation boundaries and never reveal server secret values.
 - The custom OpenClaw messaging surface is still planned, not implemented. Read `docs/handoff-personal-backend.md` before starting Phase 2 or later work.
 

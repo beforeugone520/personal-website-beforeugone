@@ -7,6 +7,7 @@
   var REACTION_TYPES = ['resonated', 'learned', 'want_more', 'confused'];
   var api = window.BeforeUApi || createApiClient();
   var visitorToken = getVisitorToken();
+  var shipPayloadPromise = null;
 
   function metaContent(name) {
     var node = document.querySelector('meta[name="' + name + '"]');
@@ -130,6 +131,11 @@
     return Math.floor(days / 365) + ' 年前';
   }
 
+  function getShipPayload() {
+    if (!shipPayloadPromise) shipPayloadPromise = api.getShip(5);
+    return shipPayloadPromise;
+  }
+
   function setStatus(node, message, kind) {
     node.textContent = message || '';
     node.classList.toggle('is-error', kind === 'error');
@@ -249,11 +255,90 @@
         updated.textContent = '更新于 ' + moment;
       }
       section.hidden = false;
+
+      getShipPayload().then(function (shipPayload) {
+        var items = Array.isArray(shipPayload && shipPayload.items) ? shipPayload.items : [];
+        if (items.length) renderNowActivity(presentShipItem(items[0]));
+      }).catch(function () {});
     }).catch(function () {});
   }
 
   /* ───────── Ship Log ───────── */
+  function friendlyShipRepository(repository) {
+    var name = String(repository || '').split('/').pop();
+    var labels = {
+      'personal-website-beforeugone': '这个站',
+      'libghostty-ohos': 'FusionTerm 的终端内核',
+      'wand-agent': 'FusionTerm 的远程后端',
+      'BeforeU-open': '开卷资料助手',
+      'BeforeU-report': '课程交付助手',
+      'CS-AI-bet': 'Major 情报终端',
+      'AI-framecut': 'AI Framecut',
+      'skill-for-work': '工作流技能集'
+    };
+    return labels[name] || name || '这个项目';
+  }
+
+  function parseShipSubject(value) {
+    var subject = String(value || '').split('\n')[0].trim();
+    var match = subject.match(/^(feat|fix|perf|refactor|docs|test|chore)(?:\([^)]*\))?!?:\s*(.+)$/i);
+    return match ? { kind: match[1].toLowerCase(), subject: match[2].trim() } : { kind: '', subject: subject };
+  }
+
+  function stableShipChoice(values, key) {
+    var hash = 2166136261;
+    var text = String(key || '');
+    for (var i = 0; i < text.length; i++) {
+      hash ^= text.charCodeAt(i);
+      hash = Math.imul(hash, 16777619);
+    }
+    return values[(hash >>> 0) % values.length];
+  }
+
+  function presentShipItem(item) {
+    var view = Object.assign({}, item);
+    var originalTitle = String(item && item.title || '');
+    var pushMatch = originalTitle.match(/^Pushed\s+(\d+)\s+commits?\s+to\s+/i);
+    if (pushMatch) {
+      var parsed = parseShipSubject(item.summary);
+      var templates = {
+        feat: ['给%s添了一块新东西', '%s又多了一项新能力'],
+        fix: ['把%s的一处别扭理顺了', '%s刚绕开了一个小坑'],
+        perf: ['让%s跑得更轻快了一点', '%s这次少费了一点劲'],
+        refactor: ['把%s里面重新收拾了一遍', '%s的内部结构更顺了'],
+        docs: ['把%s的说明补清楚了', '%s的说明又清楚了一点'],
+        test: ['给%s多上了一道保险', '%s又经得起折腾了一点'],
+        chore: ['替%s收了一点尾巴', '%s完成了一轮日常整理']
+      };
+      var choices = templates[parsed.kind] || ['%s又往前走了一点', '%s今天也有新进展'];
+      view.title = stableShipChoice(choices, String(item.id || '') + String(item.repository || '')).replace('%s', friendlyShipRepository(item.repository));
+      var count = Number(pushMatch[1]) || 1;
+      view.summary = count > 1 && parsed.subject ? count + ' 个提交一起落地，最后一笔：' + parsed.subject : parsed.subject;
+    } else if (/^Released\s+/i.test(originalTitle)) {
+      var releaseName = originalTitle.replace(/^Released\s+/i, '').trim() || '新版本';
+      view.title = friendlyShipRepository(item.repository) + ' · ' + releaseName + ' 正式放出来了';
+    }
+    return view;
+  }
+
+  function renderNowActivity(item) {
+    var node = document.getElementById('nowActivity');
+    var occurredAt = item && (item.occurred_at || item.shipped_at || item.created_at);
+    var occurred = asDate(occurredAt);
+    if (!node || !item || !item.title || !occurred) return;
+    if (Date.now() - occurred.getTime() > 14 * 86400000) return;
+
+    node.textContent = '';
+    node.appendChild(el('span', 'now-activity-time', formatRelative(occurredAt) + '：'));
+    var href = safeUrl(item.url);
+    var title = el(href ? 'a' : 'span', 'now-activity-link', item.title);
+    if (href) { title.href = href; title.target = '_blank'; title.rel = 'noopener'; }
+    node.appendChild(title);
+    node.hidden = false;
+  }
+
   function renderShipItem(item) {
+    item = presentShipItem(item);
     var row = el('li', 'ship-item');
     var time = el('time', 'ship-date', formatDay(item.occurred_at || item.shipped_at || item.created_at));
     if (item.occurred_at || item.shipped_at || item.created_at) time.dateTime = item.occurred_at || item.shipped_at || item.created_at;
@@ -269,9 +354,10 @@
 
     var facts = el('div', 'ship-facts');
     var kinds = { release: '发布', project: '项目', article: '文章', milestone: '里程碑', push: '提交' };
+    var sources = { github_push: '提交', github_release: '发布', manual: '手记', github: 'GitHub' };
     if (item.kind) facts.appendChild(el('span', 'ship-kind', kinds[item.kind] || item.kind));
-    if (item.repository) facts.appendChild(el('span', '', item.repository));
-    if (item.source) facts.appendChild(el('span', '', item.source === 'github' ? 'GitHub' : item.source));
+    if (item.source) facts.appendChild(el('span', 'ship-kind', sources[item.source] || item.source));
+    if (item.repository) facts.appendChild(el('span', '', friendlyShipRepository(item.repository)));
     if (facts.childNodes.length) main.appendChild(facts);
     row.appendChild(main);
     return row;
@@ -280,7 +366,7 @@
   function initShip() {
     var section = document.getElementById('ship');
     if (!section) return;
-    api.getShip(5).then(function (payload) {
+    getShipPayload().then(function (payload) {
       var list = document.getElementById('shipList');
       var items = Array.isArray(payload && payload.items) ? payload.items : [];
       items.forEach(function (item) { list.appendChild(renderShipItem(item)); });

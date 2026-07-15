@@ -1,6 +1,6 @@
 # Phase 1 API Contract
 
-> Contract for the implementation under [`backend/`](../backend). Production base URL is `https://api.beforeugone.com`. The GitHub activity route/cache described below is present in the repository but remains a pending production rollout; see [`backend-operations.md`](backend-operations.md).
+> Contract for the implementation under [`backend/`](../backend). Production base URL is `https://api.beforeugone.com`. GitHub activity is deployed; the humanized GitHub Ship copy described below is a repository candidate awaiting the production rollout recorded in [`backend-operations.md`](backend-operations.md).
 
 ## Conventions
 
@@ -114,7 +114,7 @@ Log `request_id` when reporting an API failure. Expected status classes include 
 }
 ```
 
-Webhook entries use `source` values `github_push` or `github_release` and also include `repository`.
+Webhook entries use `source` values `github_push` or `github_release` and also include `repository`. The backend turns Conventional Commit types into stable, restrained Chinese Ship titles, strips the type prefix from the head subject, and uses a friendly label for known repositories. Multiple commits in one push are summarized as one delivery; the choice among equivalent title templates is deterministic for that GitHub delivery and does not change between requests. Unknown commit formats fall back to a neutral project-progress title while preserving the first subject line as detail. Release entries similarly use the repository label and release name. Raw payload strings remain untrusted public GitHub data and consumers must render them with text APIs.
 
 `POST /v1/admin/ship` and `PUT /v1/admin/ship/{id}` accept:
 
